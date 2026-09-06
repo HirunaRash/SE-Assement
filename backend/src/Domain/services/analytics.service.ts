@@ -8,14 +8,16 @@ export class AnalyticsService {
   }
 
   async getSummary() {
-    const counts = await this.analyticsRepository.getReportCounts();
-    const total = counts.totalReports;
+  const counts = await this.analyticsRepository.getReportCounts();
+  const openBlockers = await this.analyticsRepository.getOpenBlockersCount();
+  const total = counts.totalReports;
 
-    return {
-      ...counts,
-      complianceRate: total > 0 ? Math.round((counts.approvedReports / total) * 100) : 0
-    };
-  }
+  return {
+    ...counts,
+    openBlockers,
+    complianceRate: total > 0 ? Math.round((counts.approvedReports / total) * 100) : 0
+  };
+}
 
   async getTrends() {
     const reports = await this.analyticsRepository.getReportsTrend();
@@ -62,5 +64,13 @@ export class AnalyticsService {
       name,
       value: count
     }));
+  }
+
+  async getTeamStatusForWeek(weekStartDate: string) {
+  return this.analyticsRepository.getTeamStatusForWeek(weekStartDate);
+  }
+
+  async getRecentActivity() {
+  return this.analyticsRepository.getRecentActivity();
   }
 }

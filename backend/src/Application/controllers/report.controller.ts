@@ -99,18 +99,20 @@ async deleteTask(req: Request, res: Response) {
   }
 
   async getAllReports(req: Request, res: Response) {
-    try {
-      const { status, projectId, userId } = req.query;
-      const reports = await this.reportService.getAllReports({
-        status: status as string,
-        projectId: projectId ? parseIdParam(projectId as string) : undefined,
-        userId: userId ? parseIdParam(userId as string) : undefined
-      });
-      res.json(reports);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
-    }
+  try {
+    const { status, projectId, userId, startDate, endDate } = req.query;
+    const reports = await this.reportService.getAllReports({
+      status: status as string,
+      projectId: projectId ? parseInt(projectId as string) : undefined,
+      userId: userId ? parseInt(userId as string) : undefined,
+      startDate: startDate as string,
+      endDate: endDate as string
+    });
+    res.json(reports);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
+}
 
   async reviewReport(req: Request, res: Response) {
     try {

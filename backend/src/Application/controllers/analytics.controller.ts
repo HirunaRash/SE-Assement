@@ -43,4 +43,25 @@ export class AnalyticsController {
       res.status(500).json({ error: error.message });
     }
   }
+
+  async getRecentActivity(req: Request, res: Response) {
+  try {
+    const activity = await this.analyticsService.getRecentActivity();
+    res.json(activity);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+  }
+  
+  async getTeamStatusForWeek(req: Request, res: Response) {
+  try {
+    const { week } = req.query;
+    if (!week) return res.status(400).json({ error: 'week query param required' });
+    const status = await this.analyticsService.getTeamStatusForWeek(week as string);
+    res.json(status);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+}
+  
 }

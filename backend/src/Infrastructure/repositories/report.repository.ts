@@ -62,18 +62,23 @@ async findTaskById(taskId: number) {
   }
 
   async findAll(filters: any) {
-    return prisma.report.findMany({
-      where: {
-        ...(filters.status && { status: filters.status }),
-        ...(filters.projectId && { projectId: filters.projectId }),
-        ...(filters.userId && { userId: filters.userId })
-      },
-      include: { user: true, tasks: true, reviews: true, project: true },
-      orderBy: { createdAt: 'desc' },
-      take: 50
-    });
-  }
-
+  return prisma.report.findMany({
+    where: {
+      ...(filters.status && { status: filters.status }),
+      ...(filters.projectId && { projectId: filters.projectId }),
+      ...(filters.userId && { userId: filters.userId }),
+      ...(filters.startDate && filters.endDate && {
+        weekStartDate: {
+          gte: new Date(filters.startDate),
+          lte: new Date(filters.endDate)
+        }
+      })
+    },
+    include: { user: true, tasks: true, reviews: true, project: true },
+    orderBy: { createdAt: 'desc' },
+    take: 50
+  });
+}
   async update(id: number, data: any) {
     return prisma.report.update({
       where: { id },

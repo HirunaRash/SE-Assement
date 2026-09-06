@@ -6,7 +6,7 @@ export class ReportService {
   constructor() {
     this.reportRepository = new ReportRepository();
   }
-
+  
   async addTask(reportId: number, userId: number, data: any) {
   const report = await this.reportRepository.findByUserIdAndId(userId, reportId);
   if (!report) throw new Error('Report not found');
