@@ -7,6 +7,7 @@ import authRoutes from './Api/routes/auth.routes';
 import reportRoutes from './Api/routes/report.routes';
 import projectRoutes from './Api/routes/project.routes';
 import analyticsRoutes from './Api/routes/analytics.routes';
+import userRoutes from './Api/routes/user.routes';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
 
 // ============ HEALTH CHECK ============
 app.get('/api/health', (req: Request, res: Response) => {

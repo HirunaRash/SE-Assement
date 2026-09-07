@@ -1,25 +1,11 @@
-import { ProjectRepository } from '../../Infrastructure/repositories/project.repository';
+import { projectRepository } from '../../Infrastructure/repositories/project.repository';
 
-export class ProjectService {
-  private projectRepository: ProjectRepository;
-
-  constructor() {
-    this.projectRepository = new ProjectRepository();
-  }
-
-  async getAllProjects() {
-    return this.projectRepository.findAll();
-  }
-
-  async createProject(data: { name: string; description?: string }) {
-    return this.projectRepository.create(data);
-  }
-
-  async updateProject(projectId: number, data: any) {
-    return this.projectRepository.update(projectId, data);
-  }
-
-  async deleteProject(projectId: number) {
-    return this.projectRepository.delete(projectId);
-  }
-}
+export const projectService = {
+  list: () => projectRepository.list(),
+  getById: async (id: number) => { const project = await projectRepository.findById(id); if (!project) throw new Error('Project not found'); return project; },
+  create: (data: any) => projectRepository.create(data),
+  update: (id: number, data: any) => projectRepository.update(id, data),
+  remove: (id: number) => projectRepository.delete(id),
+  assignMember: (projectId: number, userId: number, assignedBy: number) => projectRepository.assignMember(projectId, userId, assignedBy),
+  removeMember: (projectId: number, userId: number) => projectRepository.removeMember(projectId, userId),
+};

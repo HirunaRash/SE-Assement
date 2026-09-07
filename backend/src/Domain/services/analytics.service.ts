@@ -1,76 +1,21 @@
-import { AnalyticsRepository } from '../../Infrastructure/repositories/analytics.repository';
+import { analyticsRepository } from '../../Infrastructure/repositories/analytics.repository';
+import { prisma } from '../../Infrastructure/prisma';
 
-export class AnalyticsService {
-  private analyticsRepository: AnalyticsRepository;
-
-  constructor() {
-    this.analyticsRepository = new AnalyticsRepository();
-  }
-
-  async getSummary() {
-  const counts = await this.analyticsRepository.getReportCounts();
-  const openBlockers = await this.analyticsRepository.getOpenBlockersCount();
-  const total = counts.totalReports;
-
-  return {
-    ...counts,
-    openBlockers,
-    complianceRate: total > 0 ? Math.round((counts.approvedReports / total) * 100) : 0
-  };
-}
-
-  async getTrends() {
-    const reports = await this.analyticsRepository.getReportsTrend();
-
-    const trends = reports.reduce((acc: any, report) => {
-      const week = new Date(report.weekStartDate).toISOString().split('T')[0];
-      if (!acc[week]) {
-        acc[week] = { week, count: 0, completed: 0 };
-      }
-      acc[week].count++;
-      if (report.status === 'Approved') acc[week].completed++;
-      return acc;
-    }, {});
-
-    return Object.values(trends);
-  }
-
-  async getTeamStatus() {
-    const users = await this.analyticsRepository.getTeamMembers();
-
-    return Promise.all(
-      users.map(async (user) => ({
-        userId: user.id,
-        name: user.fullName,
-        email: user.email,
-        ...(await this.analyticsRepository.getUserReportStats(user.id))
-      }))
-    );
-  }
-
-  async getWorkload() {
-    const reports = await this.analyticsRepository.getProjectWorkload();
-
-    const workload = reports.reduce((acc: any, report: any) => {
-      const projectName = report.project?.name || 'Unassigned';
-      if (!acc[projectName]) {
-        acc[projectName] = 0;
-      }
-      acc[projectName]++;
-      return acc;
-    }, {});
-
-    return Object.entries(workload).map(([name, count]) => ({
-      name,
-      value: count
-    }));
-  }
-
-  async getTeamStatusForWeek(weekStartDate: string) {
-  return this.analyticsRepository.getTeamStatusForWeek(weekStartDate);
-  }
-
-  async getRecentActivity() {
-  return this.analyticsRepository.getRecentActivity();
-  }
-}
+export const analyticsService = {
+  summary: () => analyticsRepository.summary(),
+  trends: async () => {
+    const rows = await analyticsRepository.trends();
+    return rows.map((row: any) => ({ week: row.weekStartDate.toISOString().slice(0, 10), status: row.status, count: row._count._all }));
+  },
+  teamStatus: async () => {
+    const users = await analyticsRepository.teamStatus();
+    return users.map((user: any) => ({ userId: user.id, name: `${user.firstName} ${user.lastName}`, email: user.email, submitted: user.ownReports.filter((r: any) => r.status === 'submitted').length, approved: user.ownReports.filter((r: any) => r.status === 'approved').length, needsCorrection: user.ownReports.filter((r: any) => r.status === 'needs_correction').length, draft: user.ownReports.filter((r: any) => r.status === 'draft').length }));
+  },
+  workload: async () => {
+    const rows = await analyticsRepository.workload();
+    const projects = await prisma.project.findMany({ select: { id: true, name: true } });
+    return rows.map((row: any) => ({ name: projects.find((project: { id: number; name: string }) => project.id === row.projectId)?.name || 'Unassigned', value: row._count._all }));
+  },
+  taskTime: async () => (await analyticsRepository.taskTime()).map((row: any) => ({ type: row.taskType, hours: Number(row._sum.hours || 0) })),
+  activity: async () => (await analyticsRepository.activity()).map((row: any) => ({ type: row.newStatus, reportId: row.report.id, teamMember: `${row.report.user.firstName} ${row.report.user.lastName}`, manager: row.reviewer ? `${row.reviewer.firstName} ${row.reviewer.lastName}` : null, weekStartDate: row.report.weekStartDate, timestamp: row.createdAt, comment: row.comment })),
+};

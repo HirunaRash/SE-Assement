@@ -1,25 +1,17 @@
-import { Router, Request, Response } from 'express';
-import { ReportController } from '../../Application/controllers/report.controller';
+import { Router } from 'express';
+import { reportController } from '../../Application/controllers/report.controller';
 import { authMiddleware, requireRole } from '../middleware/auth/auth';
 
 const router = Router();
-const reportController = new ReportController();
-
-// Team member routes
-router.post('/', authMiddleware, (req, res) => reportController.createReport(req, res));
-router.get('/', authMiddleware, (req, res) => reportController.getUserReports(req, res));
-router.get('/:id', authMiddleware, (req, res) => reportController.getReport(req, res));
-router.patch('/:id', authMiddleware, (req, res) => reportController.updateReport(req, res));
-router.patch('/:id/submit', authMiddleware, (req, res) => reportController.submitReport(req, res));
-
-// Manager routes
-router.get('/manager/all', authMiddleware, requireRole(['manager', 'admin']), 
-  (req, res) => reportController.getAllReports(req, res));
-router.patch('/:id/review', authMiddleware, requireRole(['manager', 'admin']), 
-  (req, res) => reportController.reviewReport(req, res));
-
-router.post('/:id/tasks', authMiddleware, (req, res) => reportController.addTask(req, res));
-router.patch('/tasks/:taskId', authMiddleware, (req, res) => reportController.updateTask(req, res));
-router.delete('/tasks/:taskId', authMiddleware, (req, res) => reportController.deleteTask(req, res));
-
+router.use(authMiddleware);
+router.get('/', reportController.list);
+router.post('/', reportController.create);
+router.get('/manager/all', requireRole(['manager', 'admin']), reportController.list);
+router.get('/:id', reportController.get);
+router.patch('/:id', reportController.update);
+router.patch('/:id/submit', reportController.submit);
+router.patch('/:id/review', requireRole(['manager', 'admin']), reportController.review);
+router.post('/:id/tasks', reportController.addTask);
+router.patch('/tasks/:taskId', reportController.updateTask);
+router.delete('/tasks/:taskId', reportController.deleteTask);
 export default router;

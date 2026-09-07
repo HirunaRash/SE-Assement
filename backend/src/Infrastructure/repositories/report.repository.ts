@@ -1,102 +1,32 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../prisma';
 
-const prisma = new PrismaClient();
+const reportInclude = {
+  project: true,
+  user: { select: { id: true, firstName: true, lastName: true, email: true } },
+  tasks: true,
+  blockers: true,
+  achievements: true,
+  nextWeekTasks: true,
+  timeByType: true,
+  optionalFields: true,
+  reviewHistory: { include: { reviewer: { select: { id: true, firstName: true, lastName: true, email: true } } }, orderBy: { createdAt: 'desc' as const } },
+  versions: { include: { tasks: true }, orderBy: { versionNumber: 'desc' as const } },
+};
 
-export class ReportRepository {
-
-  async addTask(reportId: number, data: any) {
-  return prisma.reportTask.create({
-    data: {
-      reportId,
-      taskName: data.taskName,
-      priority: data.priority,
-      plannedPercentage: data.plannedPercentage ?? 0,
-      actualPercentage: data.actualPercentage ?? 0,
-      status: data.status ?? 'Not Started',
-      timePlannedHours: data.timePlannedHours ?? 0,
-      timeSpentHours: data.timeSpentHours ?? 0,
-      deliverable: data.deliverable
-    }
-  });
-}
-
-async updateTask(taskId: number, data: any) {
-  return prisma.reportTask.update({
-    where: { id: taskId },
-    data
-  });
-}
-
-async deleteTask(taskId: number) {
-  return prisma.reportTask.delete({ where: { id: taskId } });
-}
-
-async findTaskById(taskId: number) {
-  return prisma.reportTask.findUnique({ where: { id: taskId } });
-} 
-    
-  async create(data: any) {
-    return prisma.report.create({ data });
-  }
-
-  async findById(id: number) {
-    return prisma.report.findUnique({
-      where: { id },
-      include: { tasks: true, reviews: true, project: true, user: true }
-    });
-  }
-
-  async findByUserIdAndId(userId: number, reportId: number) {
-    return prisma.report.findFirst({
-      where: { id: reportId, userId },
-      include: { tasks: true, reviews: true, project: true }
-    });
-  }
-
-  async findByUserId(userId: number) {
-    return prisma.report.findMany({
-      where: { userId },
-      include: { tasks: true, reviews: true, project: true },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
-
-  async findAll(filters: any) {
-  return prisma.report.findMany({
-    where: {
-      ...(filters.status && { status: filters.status }),
-      ...(filters.projectId && { projectId: filters.projectId }),
-      ...(filters.userId && { userId: filters.userId }),
-      ...(filters.startDate && filters.endDate && {
-        weekStartDate: {
-          gte: new Date(filters.startDate),
-          lte: new Date(filters.endDate)
-        }
-      })
-    },
-    include: { user: true, tasks: true, reviews: true, project: true },
-    orderBy: { createdAt: 'desc' },
-    take: 50
-  });
-}
-  async update(id: number, data: any) {
-    return prisma.report.update({
-      where: { id },
-      data
-    });
-  }
-
-  async addReview(reportId: number, managerId: number, comment: string, action: string) {
-    return prisma.reviewComment.create({
-      data: { reportId, managerId, comment, action }
-    });
-  }
-
-  async getReviews(reportId: number) {
-    return prisma.reviewComment.findMany({
-      where: { reportId },
-      include: { manager: { select: { id: true, fullName: true, email: true } } },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
-}
+export const reportRepository = {
+  findById: (id: number) => prisma.report.findUnique({ where: { id }, include: reportInclude }),
+  findByUser: (userId: number) => prisma.report.findMany({ where: { userId }, include: reportInclude, orderBy: { weekStartDate: 'desc' } }),
+  findAll: (filters: { status?: any; userId?: number; startDate?: Date; endDate?: Date }) => prisma.report.findMany({ where: { ...(filters.status ? { status: filters.status } : {}), ...(filters.userId ? { userId: filters.userId } : {}), ...(filters.startDate && filters.endDate ? { weekStartDate: { gte: filters.startDate, lte: filters.endDate } } : {}) }, include: reportInclude, orderBy: { weekStartDate: 'desc' } }),
+  create: (data: any) => prisma.report.create({ data }),
+  update: (id: number, data: any) => prisma.report.update({ where: { id }, data }),
+  delete: (id: number) => prisma.report.delete({ where: { id } }),
+  addTask: (data: any) => prisma.reportTask.create({ data }),
+  updateTask: (id: number, data: any) => prisma.reportTask.update({ where: { id }, data }),
+  deleteTask: (id: number) => prisma.reportTask.delete({ where: { id } }),
+  createReview: (data: any) => prisma.reportReviewHistory.create({ data }),
+  createVersion: (data: any) => prisma.reportVersion.create({ data }),
+  addBlocker: (data: any) => prisma.reportBlocker.create({ data }),
+  addAchievement: (data: any) => prisma.reportAchievement.create({ data }),
+  addNextWeekTask: (data: any) => prisma.reportNextWeekTask.create({ data }),
+  setOptionalFields: (reportId: number, data: any) => prisma.reportOptionalFields.upsert({ where: { reportId }, update: data, create: { reportId, ...data } }),
+};
