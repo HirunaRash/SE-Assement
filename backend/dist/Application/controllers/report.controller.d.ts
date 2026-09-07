@@ -1,13 +1,23 @@
 import { Request, Response } from 'express';
-export declare const reportController: {
-    list: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    get: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    create: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    update: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    submit: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    review: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    addTask: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    updateTask: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-    deleteTask: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
-};
+export declare const myList: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const all: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getTeamReports: typeof all;
+export declare const getMine: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getManager: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const getAccessible: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const create: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const update: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const submit: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const task: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateTask: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const deleteTask: (req: Request, res: Response) => Promise<void>;
+export declare const child: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const updateChild: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const deleteChild: (req: Request, res: Response) => Promise<void>;
+export declare const time: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const approve: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const requestChanges: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const versions: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const version: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const history: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 //# sourceMappingURL=report.controller.d.ts.map

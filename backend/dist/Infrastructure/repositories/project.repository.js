@@ -1,14 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.projectRepository = void 0;
-const prisma_1 = require("../prisma");
+const prisma_1 = require("../../prisma");
+const include = { project_team_members: { include: { users: { select: { id: true, email: true, firstName: true, lastName: true } } } } };
 exports.projectRepository = {
-    list: () => prisma_1.prisma.project.findMany({ include: { _count: { select: { reports: true, projectMembers: true } } }, orderBy: { name: 'asc' } }),
-    findById: (id) => prisma_1.prisma.project.findUnique({ where: { id }, include: { _count: { select: { reports: true, projectMembers: true } } } }),
-    create: (data) => prisma_1.prisma.project.create({ data }),
-    update: (id, data) => prisma_1.prisma.project.update({ where: { id }, data }),
-    delete: (id) => prisma_1.prisma.project.delete({ where: { id } }),
-    assignMember: (projectId, userId, _assignedBy) => prisma_1.prisma.projectTeamMember.upsert({ where: { projectId_userId: { projectId, userId } }, update: {}, create: { projectId, userId } }),
-    removeMember: (projectId, userId) => prisma_1.prisma.projectTeamMember.delete({ where: { projectId_userId: { projectId, userId } } }),
+    list: () => prisma_1.prisma.projects.findMany({ include, orderBy: { createdAt: 'desc' } }),
+    findById: (id) => prisma_1.prisma.projects.findUnique({ where: { id }, include }),
+    create: (data) => prisma_1.prisma.projects.create({ data, include }),
+    update: (id, data) => prisma_1.prisma.projects.update({ where: { id }, data, include }),
+    delete: (id) => prisma_1.prisma.projects.delete({ where: { id } }),
+    addMember: (projectId, userId) => prisma_1.prisma.project_team_members.create({ data: { projectId, userId } }),
+    removeMember: (projectId, userId) => prisma_1.prisma.project_team_members.deleteMany({ where: { projectId, userId } }),
+    memberExists: (projectId, userId) => prisma_1.prisma.project_team_members.findUnique({ where: { projectId_userId: { projectId, userId } } }),
+    activeReportCount: (projectId) => prisma_1.prisma.reports.count({ where: { projectId, status: { not: 'approved' } } }),
 };
 //# sourceMappingURL=project.repository.js.map

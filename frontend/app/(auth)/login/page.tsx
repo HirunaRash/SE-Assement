@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
-import api from '@/lib/api';
 import Link from 'next/link';
 import type { FormEvent } from 'react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function LoginPage() {
 	const [email, setEmail] = useState('');
@@ -47,17 +48,51 @@ export default function LoginPage() {
 		setLoading(true);
 
 		try {
-			const response = await api.post('/auth/login', { email, password });
-			setToken(response.data.token);
-			setUser(response.data.user);
+			const response = await fetch(`${API_URL}/auth/login`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ email, password }),
+			});
 
-			if (response.data.user.role === 'manager' || response.data.user.role === 'admin') {
-				router.push('/dashboard');
+			const data = await response.json();
+			console.log('Login response:', data); // Debug log
+
+			if (!response.ok) {
+				setError(data.error || data.data?.error || 'Login failed. Please try again.');
+				setLoading(false);
+				return;
+			}
+
+			// Extract from wrapped response (backend returns { data: { user, token } })
+			const responseData = data.data || data;
+			const token = responseData.token;
+			const user = responseData.user;
+
+			// Validate token and user exist
+			if (token && user) {
+				setToken(token);
+				setUser(user);
+				localStorage.setItem('token', token);
+				localStorage.setItem('user', JSON.stringify(user));
+
+				// Redirect based on role
+				const userRoles = Array.isArray(user.roles) ? user.roles : [];
+				console.log('User roles:', userRoles); // Debug
+
+				if (userRoles.includes('manager') || userRoles.includes('admin')) {
+					router.push('/dashboard');
+				} else {
+					router.push('/report-history');
+				}
 			} else {
-				router.push('/report-history');
+				console.error('Missing token or user:', { token, user, responseData });
+				setError('Invalid response from server. Check console for details.');
 			}
 		} catch (err: any) {
-			setError(err.response?.data?.error || 'Login failed');
+			console.error('Login error:', err);
+			setError(err.message || 'Login failed. Please check your connection.');
 		} finally {
 			setLoading(false);
 		}
@@ -66,9 +101,9 @@ export default function LoginPage() {
 	const hasValidationErrors = Object.keys(validateForm()).length > 0;
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-zinc-950 via-slate-950 to-black p-4 sm:p-6 lg:p-8">
+		<main className="flex min-h-screen items-center justify-center bg-linear-to-br from-zinc-950 via-slate-950 to-black p-4 sm:p-6 lg:p-8">
 			<div className="mx-auto flex w-full max-w-4xl flex-col gap-0 lg:flex-row lg:max-w-5xl">
-				<section className="hidden w-full flex-col justify-center rounded-2xl border border-zinc-700 bg-gradient-to-b from-zinc-800 to-zinc-950 p-8 text-white lg:flex lg:w-2/5 lg:rounded-l-2xl lg:rounded-r-none lg:border-r-0 lg:p-12">
+				<section className="hidden w-full flex-col justify-center rounded-2xl border border-zinc-700 bg-linear-to-b from-zinc-800 to-zinc-950 p-8 text-white lg:flex lg:w-2/5 lg:rounded-l-2xl lg:rounded-r-none lg:border-r-0 lg:p-12">
 					<h2 className="mb-5 text-3xl font-bold lg:mb-6 lg:text-4xl">Welcome Back</h2>
 					<p className="mb-8 text-base leading-relaxed text-slate-300 lg:mb-12 lg:text-lg">
 						Access your weekly reports and team collaboration tools. Stay organized and productive.
@@ -114,7 +149,7 @@ export default function LoginPage() {
 								placeholder="your@email.com"
 								disabled={loading}
 								autoComplete="email"
-								className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-white placeholder-slate-500 transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/20 disabled:opacity-50"
+								className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-white transition focus:outline-none focus:ring-2 focus:ring-slate-400/20 disabled:opacity-50"
 								required
 							/>
 						</div>
@@ -131,7 +166,7 @@ export default function LoginPage() {
 								placeholder="••••••••"
 								disabled={loading}
 								autoComplete="current-password"
-								className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-white placeholder-slate-500 transition focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400/20 disabled:opacity-50"
+								className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-white transition focus:outline-none focus:ring-2 focus:ring-slate-400/20 disabled:opacity-50"
 								required
 							/>
 						</div>

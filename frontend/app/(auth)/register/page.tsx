@@ -60,14 +60,17 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      const response = await api.post('/api/auth/register', {
+      const [firstName, ...lastNameParts] = fullName.trim().split(/\s+/);
+      const lastName = lastNameParts.join(' ') || firstName;
+      const response = await api.register({
         email,
         password,
-        fullName: fullName.trim(),
+        firstName,
+        lastName,
         role,
       });
-      setToken(response.data.token);
-      setUser(response.data.user);
+      setToken(response.token);
+      setUser(response.user);
       router.push('/report-history');
     } catch (err: any) {
       const message = err.response?.data?.error || err.message || 'Registration failed';

@@ -1,20 +1,21 @@
 export declare const authRepository: {
-    findRole: (name: string) => import(".prisma/client").Prisma.Prisma__RoleClient<{
+    findRole: (name: string) => Promise<{
         id: number;
         name: string;
         description: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-    } | null, null, import("@prisma/client/runtime/library").DefaultArgs>;
-    assignRole: (userId: number, roleId: number, assignedBy?: number) => import(".prisma/client").Prisma.Prisma__UserRoleClient<{
+        createdAt: Date | null;
+        updatedAt: Date | null;
+    } | null>;
+    assignRole: (userId: number, roleId: number, assignedBy?: number) => Promise<{
         id: number;
         userId: number;
         roleId: number;
         assignedBy: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
-    updateLastLogin: (userId: number) => import(".prisma/client").Prisma.Prisma__UserClient<{
+        createdAt: Date | null;
+        updatedAt: Date | null;
+    }>;
+    removeRole: (userId: number, roleId: number) => import(".prisma/client").Prisma.PrismaPromise<import(".prisma/client").Prisma.BatchPayload>;
+    updateLastLogin: (userId: number) => import(".prisma/client").Prisma.Prisma__usersClient<{
         id: number;
         email: string;
         password: string;
@@ -22,10 +23,10 @@ export declare const authRepository: {
         lastName: string;
         profilePhoto: string | null;
         bio: string | null;
-        status: string;
+        status: import(".prisma/client").$Enums.users_status | null;
         lastLogin: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt: Date | null;
+        updatedAt: Date | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
 };
 //# sourceMappingURL=auth.repository.d.ts.map

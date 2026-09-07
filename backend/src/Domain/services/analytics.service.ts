@@ -1,21 +1,11 @@
 import { analyticsRepository } from '../../Infrastructure/repositories/analytics.repository';
-import { prisma } from '../../Infrastructure/prisma';
 
 export const analyticsService = {
-  summary: () => analyticsRepository.summary(),
-  trends: async () => {
-    const rows = await analyticsRepository.trends();
-    return rows.map((row: any) => ({ week: row.weekStartDate.toISOString().slice(0, 10), status: row.status, count: row._count._all }));
-  },
-  teamStatus: async () => {
-    const users = await analyticsRepository.teamStatus();
-    return users.map((user: any) => ({ userId: user.id, name: `${user.firstName} ${user.lastName}`, email: user.email, submitted: user.ownReports.filter((r: any) => r.status === 'submitted').length, approved: user.ownReports.filter((r: any) => r.status === 'approved').length, needsCorrection: user.ownReports.filter((r: any) => r.status === 'needs_correction').length, draft: user.ownReports.filter((r: any) => r.status === 'draft').length }));
-  },
-  workload: async () => {
-    const rows = await analyticsRepository.workload();
-    const projects = await prisma.project.findMany({ select: { id: true, name: true } });
-    return rows.map((row: any) => ({ name: projects.find((project: { id: number; name: string }) => project.id === row.projectId)?.name || 'Unassigned', value: row._count._all }));
-  },
-  taskTime: async () => (await analyticsRepository.taskTime()).map((row: any) => ({ type: row.taskType, hours: Number(row._sum.hours || 0) })),
-  activity: async () => (await analyticsRepository.activity()).map((row: any) => ({ type: row.newStatus, reportId: row.report.id, teamMember: `${row.report.user.firstName} ${row.report.user.lastName}`, manager: row.reviewer ? `${row.reviewer.firstName} ${row.reviewer.lastName}` : null, weekStartDate: row.report.weekStartDate, timestamp: row.createdAt, comment: row.comment })),
+  summary: async (weekStart?: Date) => { const result = await analyticsRepository.summary(weekStart); return { ...result, reportsSubmitted: result.submittedCount, submittedReports: result.submittedCount, needsCorrection: result.needsCorrectionCount, complianceRate: result.totalReports ? Math.round((result.approvedCount / result.totalReports) * 100) : 0 }; },
+  submissionByUser: async (weekStart?: Date) => (await analyticsRepository.submissionByUser(weekStart)).map((user: any) => { const report = user.reports_reports_userIdTousers[0]; const status = report?.status || 'missing'; return { userId: user.id, userName: `${user.firstName} ${user.lastName}`, name: `${user.firstName} ${user.lastName}`, reportStatus: status, status, submitted: status !== 'missing' && status !== 'draft', lastSubmittedAt: report?.submittedAt || null }; }),
+  tasksTrend: async (start?: Date, end?: Date) => { const rows = await analyticsRepository.taskTrend(start, end); const byWeek = new Map<string, { completedCount: number; pendingCount: number }>(); rows.forEach((row: any) => { const week = row.createdAt?.toISOString().slice(0, 10) || 'unknown'; const item = byWeek.get(week) || { completedCount: 0, pendingCount: 0 }; row.status === 'completed' ? item.completedCount++ : item.pendingCount++; byWeek.set(week, item); }); return [...byWeek].map(([week, values]) => ({ week, completed: values.completedCount, pending: values.pendingCount, completedCount: values.completedCount, total: values.completedCount + values.pendingCount })); },
+  workload: async () => (await analyticsRepository.workload()).map((project: any) => { const tasks = project.reports.flatMap((report: any) => report.report_tasks); const totalHours = tasks.reduce((sum: number, task: any) => sum + Number(task.timeSpentHours || task.timePlannedHours || 0), 0); return { projectId: project.id, projectName: project.name, name: project.name, totalTasks: tasks.length, totalHours, value: tasks.length, hours: totalHours }; }),
+  timeByType: async () => { const rows = await analyticsRepository.timeByType(); const total = rows.reduce((sum: number, row: any) => sum + Number(row._sum.hours || 0), 0); return rows.map((row: any) => ({ taskType: row.taskType, totalHours: Number(row._sum.hours || 0), percentage: total ? Math.round(Number(row._sum.hours || 0) / total * 100) : 0 })); },
+  recentActivity: (limit: number) => analyticsRepository.recentActivity(limit),
+  blockers: async () => (await analyticsRepository.blockers()).map((blocker: any) => ({ blockerId: blocker.id, description: blocker.description, reportId: blocker.reportId, userName: `${blocker.reports.users_reports_userIdTousers.firstName} ${blocker.reports.users_reports_userIdTousers.lastName}`, daysOpen: Math.floor((Date.now() - new Date(blocker.createdAt || Date.now()).getTime()) / 86400000) })),
 };

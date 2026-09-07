@@ -8,43 +8,88 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const auth_repository_1 = require("../../Infrastructure/repositories/auth.repository");
 const user_repository_1 = require("../../Infrastructure/repositories/user.repository");
-const publicUser = (user, roles) => ({
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    profilePhoto: user.profilePhoto,
-    bio: user.bio,
-    status: user.status,
-    roles,
-    createdAt: user.createdAt,
-});
-const tokenFor = (user) => jsonwebtoken_1.default.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+const jwtSecret = () => process.env.JWT_SECRET || 'development-secret-change-me';
+const authError = (message, statusCode) => Object.assign(new Error(message), { statusCode });
+const toPublicUser = (user) => ({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, roles: user.roles });
+const createToken = (user, roles) => jsonwebtoken_1.default.sign({ userId: user.id, roles }, jwtSecret(), { expiresIn: '7d' });
 exports.authService = {
-    register: async (data) => {
-        if (await user_repository_1.userRepository.findByEmail(data.email))
-            throw new Error('Email already registered');
-        const user = await user_repository_1.userRepository.create({ ...data, password: await bcryptjs_1.default.hash(data.password, 10) });
-        const roleName = data.role === 'manager' ? 'manager' : 'team_member';
-        const role = await auth_repository_1.authRepository.findRole(roleName);
-        if (!role)
-            throw new Error(`Role '${roleName}' is not configured`);
-        await auth_repository_1.authRepository.assignRole(user.id, role.id);
-        return { token: tokenFor(user), user: publicUser(user, [roleName]) };
+    register: async (email, password, firstName, lastName, requestedRole = 'team_member') => {
+        try {
+            const roleName = requestedRole.trim().toLowerCase();
+            if (!['team_member', 'manager'].includes(roleName))
+                throw authError('Invalid role. Use team_member or manager', 400);
+            const existingUser = await user_repository_1.userRepository.findByEmail(email);
+            if (existingUser)
+                throw authError('Email already registered', 409);
+            const role = await auth_repository_1.authRepository.findRole(roleName);
+            if (!role)
+                throw authError(`Role '${roleName}' is not configured in the database`, 500);
+            const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+            // userRepository.create performs one transaction: users row plus user_roles row.
+            const createdUser = await user_repository_1.userRepository.create({ email, password: hashedPassword, firstName, lastName }, role.id);
+            const userWithRoles = await user_repository_1.userRepository.getUserWithRoles(createdUser.id);
+            if (!userWithRoles)
+                throw authError('Registered user could not be loaded', 500);
+            const roles = await user_repository_1.userRepository.getUserRoles(createdUser.id);
+            if (!roles.length)
+                throw authError('Role assignment failed', 500);
+            console.log(`[auth] registered ${createdUser.email} with roles: ${roles.join(', ')}`);
+            return { user: toPublicUser(userWithRoles), token: createToken(userWithRoles, roles) };
+        }
+        catch (error) {
+            console.error('[auth service] registration failed', error);
+            if (error.code === 'P2002')
+                throw authError('Email already registered', 409);
+            throw error;
+        }
     },
     login: async (email, password) => {
-        const user = await user_repository_1.userRepository.findByEmail(email);
-        if (!user || !(await bcryptjs_1.default.compare(password, user.password)))
-            throw new Error('Invalid email or password');
-        const roles = user.userRoles.map((assignment) => assignment.role.name);
-        await auth_repository_1.authRepository.updateLastLogin(user.id);
-        return { token: tokenFor(user), user: publicUser(user, roles) };
+        try {
+            const user = await user_repository_1.userRepository.findByEmail(email, true);
+            if (!user?.password || !(await bcryptjs_1.default.compare(password, user.password)))
+                throw authError('Invalid email or password', 401);
+            const userWithRoles = await user_repository_1.userRepository.getUserWithRoles(user.id);
+            if (!userWithRoles)
+                throw authError('User not found', 404);
+            const roles = await user_repository_1.userRepository.getUserRoles(user.id);
+            if (!roles.length)
+                throw authError('User has no assigned roles', 403);
+            await auth_repository_1.authRepository.updateLastLogin(user.id);
+            return { user: toPublicUser(userWithRoles), token: createToken(userWithRoles, roles) };
+        }
+        catch (error) {
+            console.error('[auth service] login failed', error);
+            throw error;
+        }
     },
-    me: async (userId) => {
-        const user = await user_repository_1.userRepository.findById(userId);
+    getUserWithRoles: async (userId) => {
+        const user = await user_repository_1.userRepository.getUserWithRoles(userId);
         if (!user)
-            throw new Error('User not found');
-        return publicUser(user, user.userRoles.map((assignment) => assignment.role.name));
+            throw authError('User not found', 404);
+        return toPublicUser(user);
     },
+    me: async (userId) => exports.authService.getUserWithRoles(userId),
+    updateLastLogin: (userId) => auth_repository_1.authRepository.updateLastLogin(userId),
+    verifyToken: (token) => {
+        const payload = jsonwebtoken_1.default.verify(token, jwtSecret());
+        if (!payload.userId || !Array.isArray(payload.roles) || payload.roles.some((role) => typeof role !== 'string'))
+            throw authError('Invalid authentication token', 401);
+        return payload;
+    },
+    assignRole: async (userId, roleName, assignedBy) => {
+        const role = await auth_repository_1.authRepository.findRole(roleName);
+        if (!role)
+            throw authError(`Role '${roleName}' not found`, 404);
+        await auth_repository_1.authRepository.assignRole(userId, role.id, assignedBy);
+        return user_repository_1.userRepository.getUserWithRoles(userId);
+    },
+    removeRole: async (userId, roleName) => {
+        const role = await auth_repository_1.authRepository.findRole(roleName);
+        if (!role)
+            throw authError(`Role '${roleName}' not found`, 404);
+        await auth_repository_1.authRepository.removeRole(userId, role.id);
+        return user_repository_1.userRepository.getUserWithRoles(userId);
+    },
+    hasRole: (userId, roleName) => user_repository_1.userRepository.hasRole(userId, roleName),
 };
 //# sourceMappingURL=auth.service.js.map

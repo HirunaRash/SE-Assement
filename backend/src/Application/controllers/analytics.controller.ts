@@ -1,11 +1,16 @@
 import { Request, Response } from 'express';
 import { analyticsService } from '../../Domain/services/analytics.service';
+import { numberParam, optionalDate } from '../../Api/utils/params';
 
-export const analyticsController = {
-  summary: async (_req: Request, res: Response) => { try { return res.json(await analyticsService.summary()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-  trends: async (_req: Request, res: Response) => { try { return res.json(await analyticsService.trends()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-  teamStatus: async (_req: Request, res: Response) => { try { return res.json(await analyticsService.teamStatus()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-  workload: async (_req: Request, res: Response) => { try { return res.json(await analyticsService.workload()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-  taskTime: async (_req: Request, res: Response) => { try { return res.json(await analyticsService.taskTime()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-  activity: async (_req: Request, res: Response) => { try { return res.json(await analyticsService.activity()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-};
+export const summary = async (req: Request, res: Response) => res.json({ data: await analyticsService.summary(optionalDate(req.query.weekStart)) });
+export const submissionByUser = async (req: Request, res: Response) => res.json({ data: await analyticsService.submissionByUser(optionalDate(req.query.weekStart)) });
+export const tasksTrend = async (req: Request, res: Response) => res.json({ data: await analyticsService.tasksTrend(optionalDate(req.query.startDate), optionalDate(req.query.endDate)) });
+export const workload = async (_req: Request, res: Response) => res.json({ data: await analyticsService.workload() });
+export const timeByType = async (_req: Request, res: Response) => res.json({ data: await analyticsService.timeByType() });
+export const recentActivity = async (req: Request, res: Response) => res.json({ data: await analyticsService.recentActivity(numberParam(req.query.limit, 10, 1, 100)) });
+export const blockers = async (_req: Request, res: Response) => res.json({ data: await analyticsService.blockers() });
+
+// Compatibility endpoints used by the existing manager dashboard.
+export const trends = async (req: Request, res: Response) => res.json({ data: await analyticsService.tasksTrend(optionalDate(req.query.startDate), optionalDate(req.query.endDate)) });
+export const teamStatus = async (req: Request, res: Response) => res.json({ data: await analyticsService.submissionByUser(optionalDate(req.query.weekStart)) });
+export const activity = async (req: Request, res: Response) => res.json({ data: await analyticsService.recentActivity(numberParam(req.query.limit, 10, 1, 100)) });

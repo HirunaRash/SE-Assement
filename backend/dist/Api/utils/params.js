@@ -1,14 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseIdParam = parseIdParam;
-/**
- * Express 5's ParamsDictionary types route params as `string | string[]`
- * (to support repeated-segment routes like "/:id+"). For a normal "/:id"
- * route it's always a single string at runtime, so this helper narrows
- * it safely for TypeScript and for `parseInt`.
- */
-function parseIdParam(param) {
-    const value = Array.isArray(param) ? param[0] : param;
-    return parseInt(value, 10);
-}
+exports.optionalDate = exports.numberParam = void 0;
+const numberParam = (value, fallback, min = 0, max = 100) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.min(max, Math.max(min, Math.floor(parsed))) : fallback;
+};
+exports.numberParam = numberParam;
+const optionalDate = (value) => {
+    if (typeof value !== 'string' || !value)
+        return undefined;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? undefined : date;
+};
+exports.optionalDate = optionalDate;
 //# sourceMappingURL=params.js.map

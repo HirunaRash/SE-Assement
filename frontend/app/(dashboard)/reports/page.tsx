@@ -57,10 +57,10 @@ export default function CreateReportPage() {
 		const load = async () => {
 			try {
 				const projectResponse = await api.get('/projects');
-				setProjects(Array.isArray(projectResponse.data) ? projectResponse.data : []);
+				setProjects(Array.isArray(projectResponse) ? projectResponse : []);
 				if (!reportId) return;
 				const response = await api.get(`/reports/${reportId}`);
-				const report = response.data;
+				const report = response;
 				setWeekStart(report.weekStartDate?.slice(0, 10) || '');
 				if (report.weekStartDate) {
 					const end = new Date(report.weekStartDate);
@@ -68,11 +68,13 @@ export default function CreateReportPage() {
 					setWeekEnd(end.toISOString().slice(0, 10));
 				}
 				setProjectId(report.projectId?.toString() || '');
-				setNextWeekTasks(report.plannedNextWeek || '');
-				setNotes(report.notes || '');
-				setBlockers((report.blockers || '').split('\n').filter(Boolean).map((text: string, index: number) => ({ id: `${index}-${text}`, text })));
-				setAchievements((report.achievements || '').split('\n').filter(Boolean).map((text: string, index: number) => ({ id: `${index}-${text}`, text })));
-				setTasks((report.tasks || []).map((task: any) => ({ id: String(task.id), name: task.taskName, priority: String(task.priority).toLowerCase(), plannedPercent: task.plannedPercentage, actualPercent: task.actualPercentage, status: String(task.status).toLowerCase().replaceAll(' ', '_'), timePlanned: task.timePlannedHours, timeSpent: task.timeSpentHours, deliverable: task.deliverable || '' })));
+				const reportNextTasks = report.report_next_week_tasks || report.nextWeekTasks || [];
+				const reportOptionalFields = report.report_optional_fields?.[0] || report.optionalFields || {};
+				setNextWeekTasks(report.plannedNextWeek || reportNextTasks.map((task: any) => task.taskName).join('\n'));
+				setNotes(report.notes || reportOptionalFields.notes || '');
+				setBlockers((report.report_blockers || report.blockers || []).map((item: any, index: number) => ({ id: String(item.id || `${index}-${item.description}`), text: item.description || item.text })));
+				setAchievements((report.report_achievements || report.achievements || []).map((item: any, index: number) => ({ id: String(item.id || `${index}-${item.description}`), text: item.description || item.text })));
+				setTasks((report.report_tasks || report.tasks || []).map((task: any) => { const taskStatus = String(task.status || 'not_started').toLowerCase().replaceAll(' ', '_'); return { id: String(task.id), name: task.taskName, priority: String(task.priority || 'medium').toLowerCase() as Task['priority'], plannedPercent: task.plannedPercentage || 0, actualPercent: task.actualPercentage || 0, status: (taskStatus === 'not_started' ? 'pending' : taskStatus) as Task['status'], timePlanned: Number(task.timePlannedHours || 0), timeSpent: Number(task.timeSpentHours || 0), deliverable: task.deliverable || '' }; }));
 			} catch (requestError: any) {
 				setError(requestError.response?.data?.error || 'Unable to load report data');
 			}
@@ -118,12 +120,21 @@ export default function CreateReportPage() {
 		setError(null);
 		status === 'Draft' ? setLoading(true) : setSubmitLoading(true);
 		try {
-			const payload = { weekStartDate: weekStart, projectId: Number(projectId), achievements: achievements.map((item) => item.text).join('\n'), blockers: blockers.map((item) => item.text).join('\n'), plannedNextWeek: nextWeekTasks, notes, status };
+			const payload = {
+				weekStartDate: weekStart,
+				weekEndDate: weekEnd,
+				projectId: Number(projectId),
+				tasks: tasks.map((task) => ({ taskName: task.name, priority: task.priority, plannedPercentage: task.plannedPercent, actualPercentage: task.actualPercent, status: task.status === 'pending' ? 'not_started' : task.status, timePlannedHours: task.timePlanned, timeSpentHours: task.timeSpent, deliverable: task.deliverable })),
+				blockers: blockers.map((item) => ({ description: item.text, isKeyIssue: item.id === keyBlockerId })),
+				achievements: achievements.map((item) => ({ description: item.text, isKeyAchievement: item.id === keyAchievementId })),
+				nextWeekTasks: nextWeekTasks ? [{ taskName: nextWeekTasks, priority: 'medium' }] : [],
+				optionalFields: notes ? { notes } : undefined,
+			};
 			const response = reportId ? await api.patch(`/reports/${reportId}`, payload) : await api.post('/reports', payload);
-			const savedId = reportId || response.data.id;
-			if (!reportId) {
-				for (const task of tasks) await api.post(`/reports/${savedId}/tasks`, { taskName: task.name, priority: task.priority, plannedPercentage: task.plannedPercent, actualPercentage: task.actualPercent, status: task.status, timePlannedHours: task.timePlanned, timeSpentHours: task.timeSpent, deliverable: task.deliverable });
-			}
+			const savedId = Number(reportId || response.id);
+			if (!savedId) throw new Error('The report was saved without an id');
+			if (!reportId) await api.patch(`/reports/${savedId}`, payload);
+			if (status === 'Submitted') await api.submitReport(savedId);
 			setSuccess(status === 'Draft' ? 'Report saved as draft' : 'Report submitted for review');
 			setTimeout(() => router.push('/report-history'), 1000);
 		} catch (requestError: any) {

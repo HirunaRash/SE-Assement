@@ -1,75 +1,107 @@
 export declare const projectService: {
     list: () => import(".prisma/client").Prisma.PrismaPromise<({
-        _count: {
-            projectMembers: number;
-            reports: number;
-        };
+        project_team_members: ({
+            users: {
+                email: string;
+                firstName: string;
+                id: number;
+                lastName: string;
+            };
+        } & {
+            id: number;
+            projectId: number;
+            userId: number;
+            assignedAt: Date | null;
+        })[];
     } & {
         id: number;
         name: string;
         description: string | null;
         color: string | null;
-        status: string;
+        status: import(".prisma/client").$Enums.projects_status | null;
         createdBy: number | null;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt: Date | null;
+        updatedAt: Date | null;
     })[]>;
-    getById: (id: number) => Promise<{
-        _count: {
-            projectMembers: number;
-            reports: number;
-        };
+    get: (id: number) => Promise<{
+        project_team_members: ({
+            users: {
+                email: string;
+                firstName: string;
+                id: number;
+                lastName: string;
+            };
+        } & {
+            id: number;
+            projectId: number;
+            userId: number;
+            assignedAt: Date | null;
+        })[];
     } & {
         id: number;
         name: string;
         description: string | null;
         color: string | null;
-        status: string;
+        status: import(".prisma/client").$Enums.projects_status | null;
         createdBy: number | null;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt: Date | null;
+        updatedAt: Date | null;
     }>;
-    create: (data: any) => import(".prisma/client").Prisma.Prisma__ProjectClient<{
+    create: (data: any, createdBy: number) => import(".prisma/client").Prisma.Prisma__projectsClient<{
+        project_team_members: ({
+            users: {
+                email: string;
+                firstName: string;
+                id: number;
+                lastName: string;
+            };
+        } & {
+            id: number;
+            projectId: number;
+            userId: number;
+            assignedAt: Date | null;
+        })[];
+    } & {
         id: number;
         name: string;
         description: string | null;
         color: string | null;
-        status: string;
+        status: import(".prisma/client").$Enums.projects_status | null;
         createdBy: number | null;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt: Date | null;
+        updatedAt: Date | null;
     }, never, import("@prisma/client/runtime/library").DefaultArgs>;
-    update: (id: number, data: any) => import(".prisma/client").Prisma.Prisma__ProjectClient<{
+    update: (id: number, data: any) => Promise<{
+        project_team_members: ({
+            users: {
+                email: string;
+                firstName: string;
+                id: number;
+                lastName: string;
+            };
+        } & {
+            id: number;
+            projectId: number;
+            userId: number;
+            assignedAt: Date | null;
+        })[];
+    } & {
         id: number;
         name: string;
         description: string | null;
         color: string | null;
-        status: string;
+        status: import(".prisma/client").$Enums.projects_status | null;
         createdBy: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
-    remove: (id: number) => import(".prisma/client").Prisma.Prisma__ProjectClient<{
-        id: number;
-        name: string;
-        description: string | null;
-        color: string | null;
-        status: string;
-        createdBy: number | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
-    assignMember: (projectId: number, userId: number, assignedBy: number) => import(".prisma/client").Prisma.Prisma__ProjectTeamMemberClient<{
+        createdAt: Date | null;
+        updatedAt: Date | null;
+    }>;
+    remove: (id: number) => Promise<void>;
+    addMember: (projectId: number, userId: number) => Promise<{
         id: number;
         projectId: number;
         userId: number;
-        assignedAt: Date;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
-    removeMember: (projectId: number, userId: number) => import(".prisma/client").Prisma.Prisma__ProjectTeamMemberClient<{
-        id: number;
-        projectId: number;
-        userId: number;
-        assignedAt: Date;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
+        assignedAt: Date | null;
+    }>;
+    removeMember: (projectId: number, userId: number) => Promise<void>;
 };
 //# sourceMappingURL=project.service.d.ts.map

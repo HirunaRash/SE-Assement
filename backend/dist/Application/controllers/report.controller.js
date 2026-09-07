@@ -1,65 +1,53 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.reportController = void 0;
+exports.history = exports.version = exports.versions = exports.requestChanges = exports.approve = exports.time = exports.deleteChild = exports.updateChild = exports.child = exports.deleteTask = exports.updateTask = exports.task = exports.submit = exports.update = exports.create = exports.getAccessible = exports.getManager = exports.getMine = exports.getTeamReports = exports.all = exports.myList = void 0;
 const report_service_1 = require("../../Domain/services/report.service");
-const id = (value) => Number(Array.isArray(value) ? value[0] : value);
-exports.reportController = {
-    list: async (req, res) => { try {
-        const filters = { status: req.query.status, userId: req.query.userId ? Number(req.query.userId) : undefined, startDate: req.query.startDate ? new Date(String(req.query.startDate)) : undefined, endDate: req.query.endDate ? new Date(String(req.query.endDate)) : undefined };
-        return res.json(await report_service_1.reportService.list(req.user.id, req.user.roles, filters));
-    }
-    catch (error) {
-        return res.status(500).json({ error: error.message });
-    } },
-    get: async (req, res) => { try {
-        return res.json(await report_service_1.reportService.getById(id(req.params.id), req.user.id, req.user.roles));
-    }
-    catch (error) {
-        return res.status(error.message === 'Access denied' ? 403 : 404).json({ error: error.message });
-    } },
-    create: async (req, res) => { try {
-        return res.status(201).json(await report_service_1.reportService.create(req.user.id, req.body));
-    }
-    catch (error) {
-        return res.status(400).json({ error: error.message });
-    } },
-    update: async (req, res) => { try {
-        return res.json(await report_service_1.reportService.update(id(req.params.id), req.user.id, req.user.roles, req.body));
-    }
-    catch (error) {
-        return res.status(error.message === 'Access denied' ? 403 : 400).json({ error: error.message });
-    } },
-    submit: async (req, res) => { try {
-        return res.json(await report_service_1.reportService.submit(id(req.params.id), req.user.id, req.user.roles));
-    }
-    catch (error) {
-        return res.status(error.message === 'Access denied' ? 403 : 400).json({ error: error.message });
-    } },
-    review: async (req, res) => { try {
-        const action = req.body.action === 'approve' || req.body.action === 'approved' ? 'approved' : 'needs_correction';
-        return res.json(await report_service_1.reportService.review(id(req.params.id), req.user.id, action, req.body.comment));
-    }
-    catch (error) {
-        return res.status(400).json({ error: error.message });
-    } },
-    addTask: async (req, res) => { try {
-        return res.status(201).json(await report_service_1.reportService.addTask(id(req.params.id), req.user.id, req.user.roles, req.body));
-    }
-    catch (error) {
-        return res.status(400).json({ error: error.message });
-    } },
-    updateTask: async (req, res) => { try {
-        return res.json(await report_service_1.reportService.updateTask(id(req.params.taskId), req.body));
-    }
-    catch (error) {
-        return res.status(400).json({ error: error.message });
-    } },
-    deleteTask: async (req, res) => { try {
-        await report_service_1.reportService.deleteTask(id(req.params.taskId));
-        return res.json({ message: 'Task deleted' });
-    }
-    catch (error) {
-        return res.status(400).json({ error: error.message });
-    } },
+const params_1 = require("../../Api/utils/params");
+const id = (req) => Number(req.params.id);
+const childId = (req) => Number(req.params.taskId || req.params.blockerId || req.params.achievementId);
+const myList = async (req, res) => res.json({ data: await report_service_1.reportService.listMine(req.userId, typeof req.query.status === 'string' ? req.query.status : undefined, (0, params_1.numberParam)(req.query.skip, 0), (0, params_1.numberParam)(req.query.take, 10, 1, 100), typeof req.query.startDate === 'string' ? req.query.startDate : undefined, typeof req.query.endDate === 'string' ? req.query.endDate : undefined) });
+exports.myList = myList;
+const all = async (req, res) => res.json({ data: await report_service_1.reportService.listAll(req.query, (0, params_1.numberParam)(req.query.skip, 0), (0, params_1.numberParam)(req.query.take, 20, 1, 100)) });
+exports.all = all;
+exports.getTeamReports = exports.all;
+const getMine = async (req, res) => res.json({ data: await report_service_1.reportService.get(id(req), req.userId, false) });
+exports.getMine = getMine;
+const getManager = async (req, res) => res.json({ data: await report_service_1.reportService.get(id(req), req.userId, true) });
+exports.getManager = getManager;
+const getAccessible = async (req, res) => {
+    const manager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false;
+    return res.json({ data: await report_service_1.reportService.get(id(req), req.userId, manager) });
 };
+exports.getAccessible = getAccessible;
+const create = async (req, res) => res.status(201).json({ data: await report_service_1.reportService.create(req.userId, req.body) });
+exports.create = create;
+const update = async (req, res) => res.json({ data: await report_service_1.reportService.update(id(req), req.userId, req.body) });
+exports.update = update;
+const submit = async (req, res) => res.json({ data: await report_service_1.reportService.submit(id(req), req.userId) });
+exports.submit = submit;
+const task = async (req, res) => res.status(201).json({ data: await report_service_1.reportService.addTask(id(req), req.userId, req.body) });
+exports.task = task;
+const updateTask = async (req, res) => res.json({ data: await report_service_1.reportService.updateTask(id(req), childId(req), req.userId, req.body) });
+exports.updateTask = updateTask;
+const deleteTask = async (req, res) => { await report_service_1.reportService.deleteTask(id(req), childId(req), req.userId); res.json({ success: true }); };
+exports.deleteTask = deleteTask;
+const resource = (req) => req.path.split('/')[2];
+const child = async (req, res) => res.status(201).json({ data: await report_service_1.reportService.child(resource(req), id(req), req.userId, req.body) });
+exports.child = child;
+const updateChild = async (req, res) => res.json({ data: await report_service_1.reportService.child(resource(req), id(req), req.userId, req.body, childId(req)) });
+exports.updateChild = updateChild;
+const deleteChild = async (req, res) => { await report_service_1.reportService.deleteChild(resource(req), id(req), req.userId, childId(req)); res.json({ success: true }); };
+exports.deleteChild = deleteChild;
+const time = async (req, res) => res.status(201).json({ data: await report_service_1.reportService.addTime(id(req), req.userId, req.body) });
+exports.time = time;
+const approve = async (req, res) => res.json({ data: await report_service_1.reportService.review(id(req), req.userId, 'approved') });
+exports.approve = approve;
+const requestChanges = async (req, res) => res.json({ data: await report_service_1.reportService.review(id(req), req.userId, 'needs_correction', req.body.comment) });
+exports.requestChanges = requestChanges;
+const versions = async (req, res) => res.json({ data: await report_service_1.reportService.versions(id(req)) });
+exports.versions = versions;
+const version = async (req, res) => res.json({ data: await report_service_1.reportService.version(id(req), Number(req.params.versionNumber)) });
+exports.version = version;
+const history = async (req, res) => res.json({ data: await report_service_1.reportService.history(id(req)) });
+exports.history = history;
 //# sourceMappingURL=report.controller.js.map

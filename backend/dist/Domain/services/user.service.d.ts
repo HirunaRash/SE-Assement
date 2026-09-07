@@ -1,71 +1,11 @@
 export declare const userService: {
-    list: () => import(".prisma/client").Prisma.PrismaPromise<{
-        bio: string | null;
-        createdAt: Date;
-        email: string;
-        firstName: string;
-        id: number;
-        lastLogin: Date | null;
-        lastName: string;
-        profilePhoto: string | null;
-        status: string;
-        updatedAt: Date;
-    }[]>;
-    getById: (id: number) => Promise<{
-        userRoles: ({
-            role: {
-                id: number;
-                name: string;
-                description: string | null;
-                createdAt: Date;
-                updatedAt: Date;
-            };
-        } & {
-            id: number;
-            userId: number;
-            roleId: number;
-            assignedBy: number | null;
-            createdAt: Date;
-            updatedAt: Date;
-        })[];
-    } & {
-        id: number;
-        email: string;
-        password: string;
-        firstName: string;
-        lastName: string;
-        profilePhoto: string | null;
-        bio: string | null;
-        status: string;
-        lastLogin: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
+    list: (role: string | undefined, skip: number, take: number) => Promise<{
+        items: import("../../Infrastructure/repositories/user.repository").UserRecord[];
+        total: number;
     }>;
-    update: (id: number, data: Record<string, unknown>) => import(".prisma/client").Prisma.Prisma__UserClient<{
-        id: number;
-        email: string;
-        password: string;
-        firstName: string;
-        lastName: string;
-        profilePhoto: string | null;
-        bio: string | null;
-        status: string;
-        lastLogin: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }, never, import("@prisma/client/runtime/library").DefaultArgs>;
-    remove: (id: number) => Promise<{
-        id: number;
-        email: string;
-        password: string;
-        firstName: string;
-        lastName: string;
-        profilePhoto: string | null;
-        bio: string | null;
-        status: string;
-        lastLogin: Date | null;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
+    create: (data: any, assignedBy: number) => Promise<import("../../Infrastructure/repositories/user.repository").UserRecord | null>;
+    update: (id: number, data: any) => Promise<import("../../Infrastructure/repositories/user.repository").UserRecord>;
+    remove: (id: number) => Promise<void>;
+    setRole: (id: number, roleName: string, assignedBy: number) => Promise<import("../../Infrastructure/repositories/user.repository").UserRecord | null>;
 };
 //# sourceMappingURL=user.service.d.ts.map

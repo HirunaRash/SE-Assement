@@ -68,9 +68,22 @@ export default function ReportDetailPage() {
 
 		const fetchReport = async () => {
 			try {
-				const response = await api.get(`/reports/${reportId}`);
-				const nextReport = response.data as Report;
-				const isManager = user?.role === 'manager' || user?.role === 'admin';
+				const response: any = await api.get(`/reports/${reportId}`);
+				const nextReport: Report = {
+					...response,
+					project: response.project || response.projects || null,
+					user: response.user || response.users_reports_userIdTousers ? {
+						...(response.user || response.users_reports_userIdTousers),
+						fullName: (response.user || response.users_reports_userIdTousers)?.fullName || `${(response.user || response.users_reports_userIdTousers)?.firstName || ''} ${(response.user || response.users_reports_userIdTousers)?.lastName || ''}`.trim(),
+					} : null,
+					tasks: response.tasks || response.report_tasks || [],
+					blockers: response.blockers || response.report_blockers?.map((item: any) => item.description).join('\n') || '',
+					achievements: response.achievements || response.report_achievements?.map((item: any) => item.description).join('\n') || '',
+					plannedNextWeek: response.plannedNextWeek || response.report_next_week_tasks?.map((item: any) => item.taskName).join('\n') || '',
+					notes: response.notes || response.report_optional_fields?.[0]?.notes || '',
+					reviews: response.reviews || response.report_review_history || [],
+				};
+				const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 				if (!isManager && nextReport.userId !== user?.id) {
 					router.push('/report-history');
 					return;
@@ -93,8 +106,9 @@ export default function ReportDetailPage() {
 	const getStatusBadge = (status: string) => statusMap[status.toLowerCase()] || { text: status, className: 'bg-gray-700 text-gray-300' };
 	const getLines = (value?: string) => (value || '').split('\n').filter(Boolean);
 	const latestReview = report?.reviews?.[report.reviews.length - 1];
-	const isManager = user?.role === 'manager' || user?.role === 'admin';
+	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 	const isOwner = report?.userId === user?.id;
+	const normalizedStatus = report?.status.toLowerCase().replaceAll(' ', '_');
 
 	const submitReview = async (action: 'approve' | 'reject') => {
 		if (action === 'reject' && !reviewComment.trim()) {
@@ -106,10 +120,8 @@ export default function ReportDetailPage() {
 		setActionType(action);
 		setError(null);
 		try {
-			await api.patch(`/reports/${reportId}/review`, {
-				action: action === 'approve' ? 'Approved' : 'Needs Correction',
-				comment: reviewComment.trim(),
-			});
+			if (action === 'approve') await api.approveReport(Number(reportId));
+			else await api.requestChanges(Number(reportId), reviewComment.trim());
 			setSuccess(action === 'approve' ? 'Report approved successfully' : 'Changes requested successfully');
 			setTimeout(() => router.push('/report-history'), 1000);
 		} catch (requestError: any) {
@@ -138,7 +150,7 @@ export default function ReportDetailPage() {
 						<div className="mt-8 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2"><div><p className="text-gray-500">Week Start</p><p className="mt-1 text-white">{formatDate(report.weekStartDate)}</p></div><div><p className="text-gray-500">Project</p><p className="mt-1 text-white">{report.project?.name || 'No project'}</p></div><div><p className="text-gray-500">Submitted</p><p className="mt-1 text-white">{formatDate(report.createdAt)}</p></div><div><p className="text-gray-500">Last Updated</p><p className="mt-1 text-white">{formatDate(report.updatedAt)}</p></div></div>
 					</section>
 
-					{report.status.toLowerCase() === 'needs correction' && latestReview?.comment && <section className="rounded-2xl border border-yellow-700/50 bg-yellow-900/20 p-6 sm:p-8"><h3 className="mb-4 text-xl font-bold text-yellow-300">📝 Feedback from Manager</h3><p className="mb-4 leading-relaxed text-yellow-200">{latestReview.comment}</p><p className="text-sm text-yellow-600">Reviewed by {latestReview.manager?.fullName || latestReview.manager?.email || 'Manager'} on {formatDate(latestReview.createdAt)}</p><p className="mt-2 text-xs text-yellow-600">You can now edit this report and resubmit it for review.</p></section>}
+					{normalizedStatus === 'needs_correction' && latestReview?.comment && <section className="rounded-2xl border border-yellow-700/50 bg-yellow-900/20 p-6 sm:p-8"><h3 className="mb-4 text-xl font-bold text-yellow-300">📝 Feedback from Manager</h3><p className="mb-4 leading-relaxed text-yellow-200">{latestReview.comment}</p><p className="text-sm text-yellow-600">Reviewed by {latestReview.manager?.fullName || latestReview.manager?.email || 'Manager'} on {formatDate(latestReview.createdAt)}</p><p className="mt-2 text-xs text-yellow-600">You can now edit this report and resubmit it for review.</p></section>}
 
 					<section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h3 className="mb-8 text-2xl font-bold text-white">Tasks Completed</h3>{report.tasks?.length ? <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-xs text-gray-300 sm:text-sm"><thead className="bg-neutral-800"><tr>{['Task Name', 'Priority', 'Planned %', 'Actual %', 'Status', 'Time Planned', 'Time Spent', 'Deliverable'].map((heading) => <th key={heading} className="px-3 py-3 font-semibold">{heading}</th>)}</tr></thead><tbody>{report.tasks.map((task) => <tr key={task.id} className="border-b border-neutral-800"><td className="px-3 py-3 text-white">{task.taskName}</td><td className="px-3 py-3">{task.priority}</td><td className="px-3 py-3">{task.plannedPercentage}%</td><td className="px-3 py-3">{task.actualPercentage}%</td><td className="px-3 py-3">{task.status}</td><td className="px-3 py-3">{task.timePlannedHours}h</td><td className="px-3 py-3">{task.timeSpentHours}h</td><td className="max-w-xs truncate px-3 py-3">{task.deliverable || '-'}</td></tr>)}</tbody></table></div> : <p className="text-sm italic text-gray-400">No tasks recorded.</p>}</section>
 
@@ -148,7 +160,7 @@ export default function ReportDetailPage() {
 					<section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h3 className="mb-4 text-2xl font-bold text-white">Additional Notes / Links</h3>{report.notes ? <p className="whitespace-pre-wrap leading-relaxed text-gray-300">{report.notes}</p> : <p className="text-sm italic text-gray-400">No additional notes.</p>}</section>
 
 					{isManager && report.status.toLowerCase() === 'submitted' && <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h3 className="mb-8 text-2xl font-bold text-white">Review &amp; Approval</h3><p className="mb-6 text-gray-400">Provide feedback or approve this report.</p><label className="block text-sm text-gray-300">Feedback (required if requesting changes)<textarea value={reviewComment} onChange={(event) => setReviewComment(event.target.value)} placeholder="What needs to be changed? Or leave empty to approve." className="mt-2 h-24 w-full resize-none rounded-lg border border-neutral-700 bg-neutral-800 px-4 py-3 text-sm text-white transition focus:border-blue-500 focus:outline-none" /></label><div className="mt-6 flex flex-col gap-4 sm:flex-row"><button type="button" onClick={() => submitReview('approve')} disabled={reviewLoading} className="flex-1 rounded-lg bg-green-600 px-6 py-3 font-bold text-white transition hover:bg-green-700 disabled:opacity-50">{reviewLoading && actionType === 'approve' ? 'Approving...' : 'Approve Report'}</button><button type="button" onClick={() => submitReview('reject')} disabled={reviewLoading || !reviewComment.trim()} className="flex-1 rounded-lg bg-yellow-600 px-6 py-3 font-bold text-white transition hover:bg-yellow-700 disabled:opacity-50">{reviewLoading && actionType === 'reject' ? 'Sending...' : 'Request Changes'}</button><Link href="/report-history" className="rounded-lg bg-neutral-700 px-6 py-3 text-center font-bold text-white transition hover:bg-neutral-600">Cancel</Link></div></section>}
-					{isOwner && report.status.toLowerCase() === 'needs correction' && <div className="sticky bottom-0 flex flex-col gap-4 border-t border-neutral-800 bg-black p-6 sm:flex-row"><Link href={`/reports?id=${report.id}&edit=true`} className="flex-1 rounded-lg bg-blue-600 px-6 py-4 text-center font-bold text-white transition hover:bg-blue-700">Edit Report</Link><Link href="/report-history" className="rounded-lg bg-neutral-700 px-6 py-4 text-center font-bold text-white transition hover:bg-neutral-600">Back</Link></div>}
+					{isOwner && normalizedStatus === 'needs_correction' && <div className="sticky bottom-0 flex flex-col gap-4 border-t border-neutral-800 bg-black p-6 sm:flex-row"><Link href={`/reports?id=${report.id}&edit=true`} className="flex-1 rounded-lg bg-blue-600 px-6 py-4 text-center font-bold text-white transition hover:bg-blue-700">Edit Report</Link><Link href="/report-history" className="rounded-lg bg-neutral-700 px-6 py-4 text-center font-bold text-white transition hover:bg-neutral-600">Back</Link></div>}
 				</div>
 			)}
 		</main>

@@ -23,7 +23,7 @@ import {
 
 type TeamStatus = { userId: number; name: string; submitted?: number; approved?: number; needsCorrection?: number; draft?: number; totalReports?: number; approvedReports?: number; pendingReports?: number };
 type Activity = { type: string; reportId: number; teamMember: string; weekStartDate: string; timestamp: string };
-type Trend = { week: string; count?: number; completed?: number; planned?: number };
+type Trend = { week: string; count?: number; total?: number; completed?: number; planned?: number };
 type Workload = { name: string; value?: number; hours?: number };
 
 const chartStyle = { backgroundColor: '#1a1a1a', border: '1px solid #444' };
@@ -58,7 +58,7 @@ export default function ManagerDashboardPage() {
 	const [selectedWeek, setSelectedWeek] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const isManager = user?.role === 'manager' || user?.role === 'admin';
+	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 
 	useEffect(() => {
 		if (!token || !user) return;
@@ -80,16 +80,16 @@ export default function ManagerDashboardPage() {
 					api.get('/analytics/workload'),
 					api.get('/analytics/activity'),
 				]);
-				const summaryData = summary.data;
-				setTotalSubmitted(summaryData.submittedReports ?? summaryData.totalSubmitted ?? 0);
+				const summaryData = summary;
+				setTotalSubmitted(summaryData.submittedReports ?? summaryData.submittedCount ?? summaryData.totalSubmitted ?? 0);
 				setComplianceRate(summaryData.complianceRate ?? 0);
 				setNeedsCorrectionCount(summaryData.needsCorrection ?? summaryData.needsCorrectionCount ?? 0);
 				setOpenBlockersCount(summaryData.openBlockers ?? 0);
-				setTasksCompletedTrend((trends.data || []).map((item: Trend) => ({ ...item, planned: item.planned ?? item.count ?? 0 })));
-				setSubmissionStatusByMember(teamStatus.data || []);
-				setWorkloadByProject(workload.data || []);
-				setTimeByTaskType((workload.data || []).map((item: Workload) => ({ type: item.name, hours: item.hours ?? item.value ?? 0 })));
-				setRecentActivity((activity.data || []).slice(0, 10));
+				setTasksCompletedTrend((trends || []).map((item: Trend) => ({ ...item, planned: item.planned ?? item.count ?? item.total ?? 0 })));
+				setSubmissionStatusByMember(teamStatus || []);
+				setWorkloadByProject(workload || []);
+				setTimeByTaskType((workload || []).map((item: Workload) => ({ type: item.name, hours: item.hours ?? item.value ?? 0 })));
+				setRecentActivity((activity || []).slice(0, 10));
 			} catch (requestError: any) {
 				setError(requestError.response?.data?.error || 'Unable to load dashboard data');
 			} finally {

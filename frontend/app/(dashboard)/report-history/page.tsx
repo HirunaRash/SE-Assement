@@ -62,17 +62,23 @@ export default function ReportHistoryPage() {
 			setError(null);
 
 			try {
-				const isManager = user?.role === 'manager' || user?.role === 'admin';
+				const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 				const params: Record<string, string> = {};
-				if (statusFilter !== 'all') params.status = statusValues[statusFilter];
+				if (statusFilter !== 'all') params.status = statusValues[statusFilter].toLowerCase();
 				if (startDate) params.startDate = startDate;
 				if (endDate) params.endDate = endDate;
 				if (isManager && teamMemberFilter !== 'all') params.userId = teamMemberFilter;
 
 				const response = isManager
 					? await api.get('/reports/manager/all', { params })
-					: await api.get('/reports', { params });
-				const nextReports: Report[] = Array.isArray(response.data) ? response.data : response.data.reports || [];
+					: await api.get('/reports/my-reports', { params });
+				const rawReports: any[] = Array.isArray(response) ? response : response.items || response.reports || [];
+				const visibleReports = isManager ? rawReports.filter((report) => String(report.status || '').toLowerCase() !== 'draft') : rawReports;
+				const nextReports: Report[] = visibleReports.map((report) => ({
+					...report,
+					project: report.project || report.projects || null,
+					user: report.user || report.users_reports_userIdTousers || null,
+				}));
 				setReports(nextReports);
 
 				if (isManager) {
@@ -109,7 +115,7 @@ export default function ReportHistoryPage() {
 		className: statusStyles[status] || 'bg-gray-700 text-gray-300',
 	});
 
-	const isManager = user?.role === 'manager' || user?.role === 'admin';
+	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 
 	return (
 		<main className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
@@ -166,8 +172,10 @@ export default function ReportHistoryPage() {
 						<tbody className="divide-y divide-neutral-800">
 							{reports.map((report) => {
 								const badge = getStatusBadge(report.status);
-								const editable = report.status === 'Draft' || report.status === 'Needs Correction' || report.status.toLowerCase() === 'draft' || report.status.toLowerCase() === 'needs_correction';
-								return <tr key={report.id} className="transition hover:bg-neutral-900/50"><td className="px-4 py-4 font-medium text-white">{formatWeek(report.weekStartDate)}</td><td className="px-4 py-4 text-gray-400">{report.project?.name || 'No project'}</td><td className="px-4 py-4"><span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${badge.className}`}>{badge.text}</span></td><td className="px-4 py-4 text-xs text-gray-500">{formatDate(report.updatedAt)}</td><td className="space-x-2 px-4 py-4 text-right"><Link href={`/reports/${report.id}`} className="inline-block rounded bg-blue-900/20 px-3 py-2 text-xs text-blue-400 transition hover:bg-blue-900/40">View</Link>{editable && <Link href={`/reports/${report.id}?edit=true`} className="inline-block rounded bg-yellow-900/20 px-3 py-2 text-xs text-yellow-400 transition hover:bg-yellow-900/40">Edit</Link>}</td></tr>;
+								const normalizedStatus = report.status.toLowerCase().replaceAll(' ', '_');
+								const editable = !isManager && (normalizedStatus === 'draft' || normalizedStatus === 'needs_correction');
+								const viewHref = editable ? `/reports?id=${report.id}&edit=true` : `/reports/${report.id}`;
+								return <tr key={report.id} className="transition hover:bg-neutral-900/50"><td className="px-4 py-4 font-medium text-white">{formatWeek(report.weekStartDate)}</td><td className="px-4 py-4 text-gray-400">{report.project?.name || 'No project'}</td><td className="px-4 py-4"><span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${badge.className}`}>{badge.text}</span></td><td className="px-4 py-4 text-xs text-gray-500">{formatDate(report.updatedAt)}</td><td className="space-x-2 px-4 py-4 text-right"><Link href={viewHref} className="inline-block rounded bg-blue-900/20 px-3 py-2 text-xs text-blue-400 transition hover:bg-blue-900/40">View</Link>{editable && <Link href={viewHref} className="inline-block rounded bg-yellow-900/20 px-3 py-2 text-xs text-yellow-400 transition hover:bg-yellow-900/40">Edit</Link>}</td></tr>;
 							})}
 						</tbody>
 					</table>

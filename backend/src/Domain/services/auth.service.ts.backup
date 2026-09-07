@@ -1,0 +1,35 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { authRepository } from '../../Infrastructure/repositories/auth.repository';
+import { userRepository } from '../../Infrastructure/repositories/user.repository';
+
+const secret = () => process.env.JWT_SECRET || 'development-secret-change-me';
+const publicUser = (user: any) => ({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, roles: (user.user_roles_user_roles_userIdTousers || []).map((item: any) => item.roles.name) });
+const tokenFor = (user: any, roles: string[]) => jwt.sign({ userId: user.id, roles }, secret(), { expiresIn: '7d' });
+
+export const authService = {
+  register: async (data: any) => {
+    const existing = await userRepository.findByEmail(data.email);
+    if (existing) throw Object.assign(new Error('Email already registered'), { statusCode: 409 });
+    const roleName = data.role === 'manager' ? 'manager' : 'team_member';
+    const role = await authRepository.findRole(roleName);
+    if (!role) throw Object.assign(new Error(`Role '${roleName}' is not configured`), { statusCode: 500 });
+    const user = await userRepository.create({ email: data.email.toLowerCase(), password: await bcrypt.hash(data.password, 12), firstName: data.firstName, lastName: data.lastName });
+    await authRepository.assignRole(user.id, role.id);
+    const refreshed = await userRepository.findById(user.id);
+    const roles = [roleName];
+    return { user: publicUser(refreshed), token: tokenFor(user, roles) };
+  },
+  login: async (email: string, password: string) => {
+    const user = await userRepository.findByEmail(email.toLowerCase());
+    if (!user || !(await bcrypt.compare(password, user.password))) throw Object.assign(new Error('Invalid email or password'), { statusCode: 401 });
+    const roles = user.user_roles_user_roles_userIdTousers.map((item: any) => item.roles.name);
+    await authRepository.updateLastLogin(user.id);
+    return { user: publicUser(user), token: tokenFor(user, roles) };
+  },
+  me: async (userId: number) => {
+    const user = await userRepository.findById(userId);
+    if (!user) throw Object.assign(new Error('User not found'), { statusCode: 404 });
+    return publicUser(user);
+  },
+};

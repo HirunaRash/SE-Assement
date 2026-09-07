@@ -9,9 +9,13 @@ import type { ReactNode } from 'react';
 export default function LayoutClient({ children }: { children: ReactNode }) {
 	const router = useRouter();
 	const pathname = usePathname();
-	const { user, token, logout } = useAuthStore();
+	const { user, token, logout, initialize } = useAuthStore();
 	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const isPublicPage = pathname === '/' || pathname === '/login' || pathname === '/register';
+
+	useEffect(() => {
+		initialize();
+	}, [initialize]);
 
 	useEffect(() => {
 		if (!isPublicPage && !token) {
@@ -31,7 +35,7 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
 		);
 	}
 
-	const isManager = user?.role === 'manager' || user?.role === 'admin';
+	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 	const navItems = isManager
 		? [
 				{ href: '/dashboard', label: '📊 Dashboard' },
@@ -87,7 +91,7 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
 
 				<div>
 					<p className="mb-2 text-xs text-gray-500">Logged in as</p>
-					<p className="mb-4 truncate text-sm font-medium text-white">{user?.fullName || user?.email}</p>
+					<p className="mb-4 truncate text-sm font-medium text-white">{user ? `${user.firstName} ${user.lastName}` : 'Guest'}</p>
 					<button
 						type="button"
 						onClick={handleLogout}

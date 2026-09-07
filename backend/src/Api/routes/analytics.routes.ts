@@ -1,13 +1,18 @@
 import { Router } from 'express';
-import { analyticsController } from '../../Application/controllers/analytics.controller';
-import { authMiddleware, requireRole } from '../middleware/auth/auth';
+import * as controller from './../../Application/controllers/analytics.controller';
+import { authenticate, requireRoles } from './../middleware/auth/auth';
 
 const router = Router();
-router.use(authMiddleware, requireRole(['manager', 'admin']));
-router.get('/summary', analyticsController.summary);
-router.get('/trends', analyticsController.trends);
-router.get('/team-status', analyticsController.teamStatus);
-router.get('/workload', analyticsController.workload);
-router.get('/task-time', analyticsController.taskTime);
-router.get('/activity', analyticsController.activity);
+router.use(authenticate, requireRoles('manager', 'admin'));
+router.get('/summary', controller.summary);
+router.get('/submission-by-user', controller.submissionByUser);
+router.get('/tasks-completed-trend', controller.tasksTrend);
+router.get('/workload-by-project', controller.workload);
+router.get('/time-by-task-type', controller.timeByType);
+router.get('/recent-activity', controller.recentActivity);
+router.get('/blockers', controller.blockers);
+router.get('/trends', controller.trends);
+router.get('/team-status', controller.teamStatus);
+router.get('/workload', controller.workload);
+router.get('/activity', controller.activity);
 export default router;

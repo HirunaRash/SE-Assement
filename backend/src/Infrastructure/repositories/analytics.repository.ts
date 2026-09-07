@@ -1,15 +1,21 @@
-import { prisma } from '../prisma';
+import { prisma } from '../../prisma';
 
 export const analyticsRepository = {
-  summary: async () => {
-    const [totalReports, submittedReports, approvedReports, needsCorrection, openBlockers] = await Promise.all([
-      prisma.report.count(), prisma.report.count({ where: { status: 'submitted' } }), prisma.report.count({ where: { status: 'approved' } }), prisma.report.count({ where: { status: 'needs_correction' } }), prisma.reportBlocker.count({ where: { isKeyIssue: true, resolution: null } }),
+  summary: async (weekStart?: Date) => {
+    const where = weekStart ? { weekStartDate: weekStart } : {};
+    const [totalReports, submittedCount, approvedCount, needsCorrectionCount, openBlockersCount] = await Promise.all([
+      prisma.reports.count({ where }),
+      prisma.reports.count({ where: { ...where, status: 'submitted' } }),
+      prisma.reports.count({ where: { ...where, status: 'approved' } }),
+      prisma.reports.count({ where: { ...where, status: 'needs_correction' } }),
+      prisma.report_blockers.count({ where: { reports: { ...where, status: { not: 'approved' } } } }),
     ]);
-    return { totalReports, submittedReports, approvedReports, needsCorrection, openBlockers, complianceRate: totalReports ? Math.round((approvedReports / totalReports) * 100) : 0 };
+    return { totalReports, submittedCount, approvedCount, needsCorrectionCount, openBlockersCount };
   },
-  trends: () => prisma.report.groupBy({ by: ['weekStartDate', 'status'], _count: { _all: true }, orderBy: { weekStartDate: 'asc' } }),
-  teamStatus: () => prisma.user.findMany({ where: { userRoles: { some: { role: { name: 'team_member' } } } }, select: { id: true, firstName: true, lastName: true, email: true, ownReports: { select: { status: true } } } }),
-  workload: () => prisma.report.groupBy({ by: ['projectId'], _count: { _all: true } }),
-  taskTime: () => prisma.reportTimeByTaskType.groupBy({ by: ['taskType'], _sum: { hours: true } }),
-  activity: () => prisma.reportReviewHistory.findMany({ take: 10, orderBy: { createdAt: 'desc' }, include: { report: { select: { id: true, weekStartDate: true, user: { select: { firstName: true, lastName: true } } } }, reviewer: { select: { firstName: true, lastName: true } } } }),
+  submissionByUser: (weekStart?: Date) => prisma.users.findMany({ select: { id: true, firstName: true, lastName: true, reports_reports_userIdTousers: { where: weekStart ? { weekStartDate: weekStart } : {}, orderBy: { submittedAt: 'desc' }, take: 1, select: { status: true, submittedAt: true } } } }),
+  taskTrend: (startDate?: Date, endDate?: Date) => prisma.report_tasks.findMany({ where: { createdAt: { gte: startDate, lte: endDate } }, select: { status: true, createdAt: true } }),
+  workload: () => prisma.projects.findMany({ select: { id: true, name: true, reports: { select: { report_tasks: { select: { status: true, timePlannedHours: true, timeSpentHours: true } } } } } }),
+  timeByType: () => prisma.report_time_by_task_type.groupBy({ by: ['taskType'], _sum: { hours: true } }),
+  recentActivity: (limit: number) => prisma.report_review_history.findMany({ take: limit, orderBy: { createdAt: 'desc' }, include: { users: { select: { firstName: true, lastName: true } }, reports: { select: { id: true } } } }),
+  blockers: () => prisma.report_blockers.findMany({ where: { reports: { status: { not: 'approved' } } }, include: { reports: { include: { users_reports_userIdTousers: { select: { firstName: true, lastName: true } } } } }, orderBy: { createdAt: 'asc' } }),
 };

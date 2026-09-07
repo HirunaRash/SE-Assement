@@ -1,14 +1,16 @@
 import { Router } from 'express';
-import { projectController } from '../../Application/controllers/project.controller';
-import { authMiddleware, requireRole } from '../middleware/auth/auth';
+import * as controller from './../../Application/controllers/project.controller';
+import { authenticate, requireRoles } from './../middleware/auth/auth';
+import { bodyRequired } from './../middleware/validation';
 
 const router = Router();
-router.use(authMiddleware);
-router.get('/', projectController.list);
-router.get('/:id', projectController.get);
-router.post('/', requireRole(['manager', 'admin']), projectController.create);
-router.patch('/:id', requireRole(['manager', 'admin']), projectController.update);
-router.delete('/:id', requireRole(['manager', 'admin']), projectController.remove);
-router.post('/:id/members', requireRole(['manager', 'admin']), projectController.assignMember);
-router.delete('/:id/members/:userId', requireRole(['manager', 'admin']), projectController.removeMember);
+router.use(authenticate);
+router.get('/', controller.list);
+router.post('/', requireRoles('manager', 'admin'), bodyRequired('name'), controller.create);
+router.get('/:id', controller.get);
+router.put('/:id', requireRoles('manager', 'admin'), controller.update);
+router.patch('/:id', requireRoles('manager', 'admin'), controller.update);
+router.delete('/:id', requireRoles('manager', 'admin'), controller.remove);
+router.post('/:id/team-members', requireRoles('manager', 'admin'), bodyRequired('userId'), controller.addMember);
+router.delete('/:id/team-members/:userId', requireRoles('manager', 'admin'), controller.removeMember);
 export default router;

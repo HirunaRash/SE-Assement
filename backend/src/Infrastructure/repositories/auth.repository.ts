@@ -1,7 +1,15 @@
-import { prisma } from '../prisma';
+import { prisma } from '../../prisma';
 
 export const authRepository = {
-  findRole: (name: string) => prisma.role.findUnique({ where: { name } }),
-  assignRole: (userId: number, roleId: number, assignedBy?: number) => prisma.userRole.upsert({ where: { userId_roleId: { userId, roleId } }, update: { assignedBy }, create: { userId, roleId, assignedBy } }),
-  updateLastLogin: (userId: number) => prisma.user.update({ where: { id: userId }, data: { lastLogin: new Date() } }),
+  findRole: async (name: string) => prisma.roles.findUnique({ where: { name } }),
+
+  assignRole: async (userId: number, roleId: number, assignedBy?: number) => prisma.user_roles.upsert({
+    where: { userId_roleId: { userId, roleId } },
+    create: { userId, roleId, assignedBy },
+    update: {},
+  }),
+
+  removeRole: (userId: number, roleId: number) => prisma.user_roles.deleteMany({ where: { userId, roleId } }),
+
+  updateLastLogin: (userId: number) => prisma.users.update({ where: { id: userId }, data: { lastLogin: new Date() } }),
 };

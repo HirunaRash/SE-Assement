@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { authController } from '../../Application/controllers/auth.controller';
-import { authMiddleware } from '../middleware/auth/auth';
+import * as authController from './../../Application/controllers/auth.controller';
+import { authenticate } from './../middleware/auth/auth';
 
 const router = Router();
+
+// Mounted by index.ts at /api/auth, so this becomes POST /api/auth/register.
 router.post('/register', authController.register);
 router.post('/login', authController.login);
-router.get('/me', authMiddleware, authController.me);
+router.get('/me', authenticate, authController.me);
+
 export default router;

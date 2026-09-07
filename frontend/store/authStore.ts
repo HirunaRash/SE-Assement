@@ -1,37 +1,77 @@
+// frontend/src/store/authStore.ts
+
 import { create } from 'zustand';
 
 interface User {
   id: number;
   email: string;
-  fullName: string;
-  role: string;
+  firstName: string;
+  lastName: string;
+  roles: string[];
 }
 
-interface AuthState {
-  user: User | null;
+interface AuthStore {
   token: string | null;
+  user: User | null;
   isLoading: boolean;
-  setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  setLoading: (loading: boolean) => void;
+  setToken: (token: string) => void;
+  setUser: (user: User) => void;
   logout: () => void;
+  isAuthenticated: () => boolean;
+  hasRole: (role: string) => boolean;
+  initialize: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
+  token: null,
   user: null,
-  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
   isLoading: false,
-  setUser: (user) => set({ user }),
-  setToken: (token) => {
-    if (typeof window !== 'undefined') {
-      if (token) localStorage.setItem('token', token);
-      else localStorage.removeItem('token');
-    }
+
+  setToken: (token: string) => {
     set({ token });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', token);
+    }
   },
-  setLoading: (loading) => set({ isLoading: loading }),
+
+  setUser: (user: User) => {
+    set({ user });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user', JSON.stringify(user));
+    }
+  },
+
   logout: () => {
-    if (typeof window !== 'undefined') localStorage.removeItem('token');
-    set({ user: null, token: null });
+    set({ token: null, user: null });
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  },
+
+  isAuthenticated: () => {
+    const { token } = get();
+    return !!token;
+  },
+
+  hasRole: (role: string) => {
+    const { user } = get();
+    return user?.roles?.includes(role) || false;
+  },
+
+  initialize: () => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      const userJson = localStorage.getItem('user');
+      
+      if (token && userJson) {
+        try {
+          const user = JSON.parse(userJson);
+          set({ token, user });
+        } catch (error) {
+          console.error('Failed to parse user from localStorage', error);
+        }
+      }
+    }
   },
 }));

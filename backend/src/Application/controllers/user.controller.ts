@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { userService } from '../../Domain/services/user.service';
+import { numberParam } from '../../Api/utils/params';
 
-export const userController = {
-  list: async (_req: Request, res: Response) => { try { return res.json(await userService.list()); } catch (error: any) { return res.status(500).json({ error: error.message }); } },
-  get: async (req: Request, res: Response) => { try { return res.json(await userService.getById(Number(req.params.id))); } catch (error: any) { return res.status(404).json({ error: error.message }); } },
-  update: async (req: Request, res: Response) => { try { return res.json(await userService.update(Number(req.params.id), req.body)); } catch (error: any) { return res.status(400).json({ error: error.message }); } },
-  remove: async (req: Request, res: Response) => { try { await userService.remove(Number(req.params.id)); return res.json({ message: 'User deleted' }); } catch (error: any) { return res.status(400).json({ error: error.message }); } },
-};
+export const list = async (req: Request, res: Response) => res.json({ data: await userService.list(typeof req.query.role === 'string' ? req.query.role : undefined, numberParam(req.query.skip, 0), numberParam(req.query.take, 20, 1, 100)) });
+export const create = async (req: Request, res: Response) => res.status(201).json({ data: await userService.create(req.body, req.userId!) });
+export const update = async (req: Request, res: Response) => res.json({ data: await userService.update(Number(req.params.id), req.body) });
+export const remove = async (req: Request, res: Response) => { await userService.remove(Number(req.params.id)); res.json({ success: true }); };
+export const setRole = async (req: Request, res: Response) => res.json({ data: await userService.setRole(Number(req.params.id), req.body.role, req.userId!) });

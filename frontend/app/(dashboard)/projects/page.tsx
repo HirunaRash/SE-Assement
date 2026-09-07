@@ -34,13 +34,13 @@ export default function ProjectsPage() {
 	const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 	const [deleteLoading, setDeleteLoading] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
-	const isManager = user?.role === 'manager' || user?.role === 'admin';
+	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 
 	const fetchProjects = async () => {
 		setLoading(true);
 		try {
 			const response = await api.get('/projects');
-			const data: ProjectResponse[] = Array.isArray(response.data) ? response.data : [];
+			const data: ProjectResponse[] = Array.isArray(response) ? response : [];
 			setProjects(data.map((project) => ({ ...project, memberCount: project.memberCount ?? project._count?.reports ?? 0 })));
 		} catch (requestError: any) {
 			setError(requestError.response?.data?.error || 'Unable to load projects');

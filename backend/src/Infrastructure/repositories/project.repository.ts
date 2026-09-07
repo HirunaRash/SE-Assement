@@ -1,11 +1,15 @@
-import { prisma } from '../prisma';
+import { prisma } from '../../prisma';
+
+const include = { project_team_members: { include: { users: { select: { id: true, email: true, firstName: true, lastName: true } } } } } as const;
 
 export const projectRepository = {
-  list: () => prisma.project.findMany({ include: { _count: { select: { reports: true, projectMembers: true } } }, orderBy: { name: 'asc' } }),
-  findById: (id: number) => prisma.project.findUnique({ where: { id }, include: { _count: { select: { reports: true, projectMembers: true } } } }),
-  create: (data: any) => prisma.project.create({ data }),
-  update: (id: number, data: any) => prisma.project.update({ where: { id }, data }),
-  delete: (id: number) => prisma.project.delete({ where: { id } }),
-  assignMember: (projectId: number, userId: number, _assignedBy: number) => prisma.projectTeamMember.upsert({ where: { projectId_userId: { projectId, userId } }, update: {}, create: { projectId, userId } }),
-  removeMember: (projectId: number, userId: number) => prisma.projectTeamMember.delete({ where: { projectId_userId: { projectId, userId } } }),
+  list: () => prisma.projects.findMany({ include, orderBy: { createdAt: 'desc' } }),
+  findById: (id: number) => prisma.projects.findUnique({ where: { id }, include }),
+  create: (data: any) => prisma.projects.create({ data, include }),
+  update: (id: number, data: any) => prisma.projects.update({ where: { id }, data, include }),
+  delete: (id: number) => prisma.projects.delete({ where: { id } }),
+  addMember: (projectId: number, userId: number) => prisma.project_team_members.create({ data: { projectId, userId } }),
+  removeMember: (projectId: number, userId: number) => prisma.project_team_members.deleteMany({ where: { projectId, userId } }),
+  memberExists: (projectId: number, userId: number) => prisma.project_team_members.findUnique({ where: { projectId_userId: { projectId, userId } } }),
+  activeReportCount: (projectId: number) => prisma.reports.count({ where: { projectId, status: { not: 'approved' } } }),
 };

@@ -1,44 +1,44 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { NextFunction, Request, Response } from 'express';
+import { authService } from '../../../Domain/services/auth.service';
+import type { AuthTokenPayload } from '../../../Domain/services/auth.service';
 
-// Extend Express Request to include user
-import { userRepository } from '../../../Infrastructure/repositories/user.repository';
+export interface AuthPayload {
+  userId: number;
+  roles: string[];
+}
+
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: number;
-        email: string;
-        roles: string[];
-      };
+      userId?: number;
+      userRoles?: string[];
     }
   }
 }
 
-// Verify JWT token
-export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const header = req.header('authorization');
+  const token = header?.startsWith('Bearer ') ? header.slice(7).trim() : '';
+  if (!token) return res.status(401).json({ error: 'Authentication token is required' });
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as any;
-    const roles = await userRepository.getRoleNames(decoded.id);
-    req.user = { ...decoded, roles };
-    next();
+    const payload: AuthTokenPayload = authService.verifyToken(token);
+    req.userId = Number(payload.userId);
+    req.userRoles = payload.roles;
+    console.log(`[auth middleware] user ${req.userId} roles: ${req.userRoles.join(', ')}`);
+    return next();
   } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
+    console.error('[auth middleware] token validation failed', error);
+    return res.status(401).json({ error: 'Invalid or expired authentication token' });
   }
 };
 
-// Check if user has specific role
-export const requireRole = (roles: string[]) => {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !req.user.roles.some((role) => roles.includes(role))) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-    next();
-  };
+export const roleCheckMiddleware = (requiredRoles: string[]) => (req: Request, res: Response, next: NextFunction) => {
+  const roles = req.userRoles || [];
+  if (!roles.some((role) => requiredRoles.includes(role))) return res.status(403).json({ error: 'Insufficient permissions' });
+  return next();
 };
+
+export const authenticate = authMiddleware;
+export const requireRoles = (...requiredRoles: string[]) => roleCheckMiddleware(requiredRoles);
+export const auth = authMiddleware;
+export const role = requireRoles;

@@ -1,8 +1,3 @@
-/**
- * Express 5's ParamsDictionary types route params as `string | string[]`
- * (to support repeated-segment routes like "/:id+"). For a normal "/:id"
- * route it's always a single string at runtime, so this helper narrows
- * it safely for TypeScript and for `parseInt`.
- */
-export declare function parseIdParam(param: string | string[]): number;
+export declare const numberParam: (value: unknown, fallback: number, min?: number, max?: number) => number;
+export declare const optionalDate: (value: unknown) => Date | undefined;
 //# sourceMappingURL=params.d.ts.map
