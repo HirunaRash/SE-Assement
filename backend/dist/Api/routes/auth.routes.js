@@ -41,5 +41,6 @@ const router = (0, express_1.Router)();
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/me', auth_1.authenticate, authController.me);
+router.put('/me', auth_1.authenticate, authController.updateMe);
 exports.default = router;
 //# sourceMappingURL=auth.routes.js.map

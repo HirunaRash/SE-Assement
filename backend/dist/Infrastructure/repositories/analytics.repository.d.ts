@@ -1,4 +1,26 @@
 export declare const analyticsRepository: {
+    teamSection: (weekStart: Date, section: 'blockers' | 'achievements') => import(".prisma/client").Prisma.PrismaPromise<{
+        firstName: string;
+        id: number;
+        lastName: string;
+        reports_reports_userIdTousers: {
+            id: number;
+            projects: {
+                name: string;
+            } | null;
+            report_achievements: {
+                description: string;
+                id: number;
+                isKeyAchievement: boolean | null;
+            }[];
+            report_blockers: {
+                description: string;
+                id: number;
+                isKeyIssue: boolean | null;
+            }[];
+            weekStartDate: Date;
+        }[];
+    }[]>;
     summary: (weekStart?: Date) => Promise<{
         totalReports: number;
         submittedCount: number;
@@ -39,6 +61,11 @@ export declare const analyticsRepository: {
     recentActivity: (limit: number) => import(".prisma/client").Prisma.PrismaPromise<({
         reports: {
             id: number;
+            users_reports_userIdTousers: {
+                firstName: string;
+                lastName: string;
+            };
+            weekStartDate: Date;
         };
         users: {
             firstName: string;

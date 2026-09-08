@@ -5,6 +5,7 @@ const prisma_1 = require("../../prisma");
 const include = { project_team_members: { include: { users: { select: { id: true, email: true, firstName: true, lastName: true } } } } };
 exports.projectRepository = {
     list: () => prisma_1.prisma.projects.findMany({ include, orderBy: { createdAt: 'desc' } }),
+    listForMember: (userId) => prisma_1.prisma.projects.findMany({ where: { project_team_members: { some: { userId } } }, include, orderBy: { createdAt: 'desc' } }),
     findById: (id) => prisma_1.prisma.projects.findUnique({ where: { id }, include }),
     create: (data) => prisma_1.prisma.projects.create({ data, include }),
     update: (id, data) => prisma_1.prisma.projects.update({ where: { id }, data, include }),

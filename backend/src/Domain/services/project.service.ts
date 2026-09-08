@@ -3,6 +3,7 @@ import { userRepository } from '../../Infrastructure/repositories/user.repositor
 
 export const projectService = {
   list: () => projectRepository.list(),
+  listForMember: (userId: number) => projectRepository.listForMember(userId),
   get: async (id: number) => { const project = await projectRepository.findById(id); if (!project) throw Object.assign(new Error('Project not found'), { statusCode: 404 }); return project; },
   create: (data: any, createdBy: number) => projectRepository.create({ name: data.name, description: data.description, color: data.color, status: data.status, createdBy }),
   update: async (id: number, data: any) => { await projectService.get(id); return projectRepository.update(id, data); },

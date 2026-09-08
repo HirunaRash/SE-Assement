@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activity = exports.teamStatus = exports.trends = exports.blockers = exports.recentActivity = exports.timeByType = exports.workload = exports.tasksTrend = exports.submissionByUser = exports.summary = void 0;
+exports.teamSection = exports.activity = exports.teamStatus = exports.trends = exports.blockers = exports.recentActivity = exports.timeByType = exports.workload = exports.tasksTrend = exports.submissionByUser = exports.summary = void 0;
 const analytics_service_1 = require("../../Domain/services/analytics.service");
 const params_1 = require("../../Api/utils/params");
 const summary = async (req, res) => res.json({ data: await analytics_service_1.analyticsService.summary((0, params_1.optionalDate)(req.query.weekStart)) });
@@ -24,4 +24,12 @@ const teamStatus = async (req, res) => res.json({ data: await analytics_service_
 exports.teamStatus = teamStatus;
 const activity = async (req, res) => res.json({ data: await analytics_service_1.analyticsService.recentActivity((0, params_1.numberParam)(req.query.limit, 10, 1, 100)) });
 exports.activity = activity;
+const teamSection = async (req, res) => {
+    const section = req.query.section === 'achievements' ? 'achievements' : 'blockers';
+    const weekStart = (0, params_1.optionalDate)(req.query.weekStart);
+    if (!weekStart)
+        return res.status(400).json({ error: 'A valid weekStart date is required' });
+    return res.json({ data: await analytics_service_1.analyticsService.teamSection(weekStart, section) });
+};
+exports.teamSection = teamSection;
 //# sourceMappingURL=analytics.controller.js.map

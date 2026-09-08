@@ -1,4 +1,10 @@
 export declare const analyticsService: {
+    teamSection: (weekStart: Date, section: 'blockers' | 'achievements') => Promise<{
+        userId: any;
+        name: string;
+        email: any;
+        reports: any;
+    }[]>;
     summary: (weekStart?: Date) => Promise<{
         totalReports: number;
         submittedCount: number;
@@ -40,23 +46,14 @@ export declare const analyticsService: {
         totalHours: number;
         percentage: number;
     }[]>;
-    recentActivity: (limit: number) => import(".prisma/client").Prisma.PrismaPromise<({
-        reports: {
-            id: number;
-        };
-        users: {
-            firstName: string;
-            lastName: string;
-        } | null;
-    } & {
-        id: number;
-        reportId: number;
-        reviewedBy: number | null;
-        previousStatus: import(".prisma/client").$Enums.report_review_history_previousStatus | null;
-        newStatus: import(".prisma/client").$Enums.report_review_history_newStatus;
-        comment: string | null;
-        createdAt: Date | null;
-    })[]>;
+    recentActivity: (limit: number) => Promise<{
+        type: any;
+        reportId: any;
+        teamMember: string;
+        weekStartDate: any;
+        timestamp: any;
+        comment: any;
+    }[]>;
     blockers: () => Promise<{
         blockerId: any;
         description: any;

@@ -3,6 +3,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyticsRepository = void 0;
 const prisma_1 = require("../../prisma");
 exports.analyticsRepository = {
+    teamSection: (weekStart, section) => prisma_1.prisma.users.findMany({
+        where: { user_roles_user_roles_userIdTousers: { some: { roles: { name: 'team_member' } } } },
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            reports_reports_userIdTousers: {
+                where: { weekStartDate: weekStart },
+                select: {
+                    id: true,
+                    weekStartDate: true,
+                    projects: { select: { name: true } },
+                    report_blockers: { select: { id: true, description: true, isKeyIssue: true } },
+                    report_achievements: { select: { id: true, description: true, isKeyAchievement: true } },
+                },
+            },
+        },
+    }),
     summary: async (weekStart) => {
         const where = weekStart ? { weekStartDate: weekStart } : {};
         const [totalReports, submittedCount, approvedCount, needsCorrectionCount, openBlockersCount] = await Promise.all([
@@ -18,7 +36,7 @@ exports.analyticsRepository = {
     taskTrend: (startDate, endDate) => prisma_1.prisma.report_tasks.findMany({ where: { createdAt: { gte: startDate, lte: endDate } }, select: { status: true, createdAt: true } }),
     workload: () => prisma_1.prisma.projects.findMany({ select: { id: true, name: true, reports: { select: { report_tasks: { select: { status: true, timePlannedHours: true, timeSpentHours: true } } } } } }),
     timeByType: () => prisma_1.prisma.report_time_by_task_type.groupBy({ by: ['taskType'], _sum: { hours: true } }),
-    recentActivity: (limit) => prisma_1.prisma.report_review_history.findMany({ take: limit, orderBy: { createdAt: 'desc' }, include: { users: { select: { firstName: true, lastName: true } }, reports: { select: { id: true } } } }),
+    recentActivity: (limit) => prisma_1.prisma.report_review_history.findMany({ take: limit, orderBy: { createdAt: 'desc' }, include: { users: { select: { firstName: true, lastName: true } }, reports: { select: { id: true, weekStartDate: true, users_reports_userIdTousers: { select: { firstName: true, lastName: true } } } } } }),
     blockers: () => prisma_1.prisma.report_blockers.findMany({ where: { reports: { status: { not: 'approved' } } }, include: { reports: { include: { users_reports_userIdTousers: { select: { firstName: true, lastName: true } } } } }, orderBy: { createdAt: 'asc' } }),
 };
 //# sourceMappingURL=analytics.repository.js.map

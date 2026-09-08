@@ -9,4 +9,5 @@ export declare const blockers: (_req: Request, res: Response) => Promise<Respons
 export declare const trends: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const teamStatus: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const activity: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const teamSection: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 //# sourceMappingURL=analytics.controller.d.ts.map

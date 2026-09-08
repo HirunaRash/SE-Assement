@@ -2,8 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeMember = exports.addMember = exports.remove = exports.update = exports.create = exports.get = exports.getProjects = exports.list = void 0;
 const project_service_1 = require("../../Domain/services/project.service");
-const list = async (_req, res) => {
-    const projects = await project_service_1.projectService.list();
+const list = async (req, res) => {
+    const isManager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false;
+    const projects = isManager ? await project_service_1.projectService.list() : await project_service_1.projectService.listForMember(req.userId);
     return res.json({ data: projects.map((project) => ({
             ...project,
             teamCount: project.project_team_members?.length || 0,

@@ -5,6 +5,7 @@ const project_repository_1 = require("../../Infrastructure/repositories/project.
 const user_repository_1 = require("../../Infrastructure/repositories/user.repository");
 exports.projectService = {
     list: () => project_repository_1.projectRepository.list(),
+    listForMember: (userId) => project_repository_1.projectRepository.listForMember(userId),
     get: async (id) => { const project = await project_repository_1.projectRepository.findById(id); if (!project)
         throw Object.assign(new Error('Project not found'), { statusCode: 404 }); return project; },
     create: (data, createdBy) => project_repository_1.projectRepository.create({ name: data.name, description: data.description, color: data.color, status: data.status, createdBy }),

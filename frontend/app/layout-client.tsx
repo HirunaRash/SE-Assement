@@ -41,10 +41,14 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
 				{ href: '/dashboard', label: '📊 Dashboard' },
 				{ href: '/report-history', label: '📋 Reports' },
 				{ href: '/projects', label: '📁 Projects' },
+				{ href: '/projects/team-members', label: '👥 Team Members' },
+				{ href: '/account-settings', label: '⚙️ Account Settings' },
+				{ href: '/weekly-team-insights', label: '📌 Weekly Team Insights' },
 			]
 		: [
 				{ href: '/report-history', label: '📋 My Reports' },
 				{ href: '/reports', label: '✍️ Create Report' },
+				{ href: '/account-settings', label: '⚙️ Account Settings' },
 			];
 
 	const handleLogout = () => {

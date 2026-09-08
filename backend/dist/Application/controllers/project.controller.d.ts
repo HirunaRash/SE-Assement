@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-export declare const list: (_req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
+export declare const list: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const getProjects: typeof list;
 export declare const get: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;
 export declare const create: (req: Request, res: Response) => Promise<Response<any, Record<string, any>>>;

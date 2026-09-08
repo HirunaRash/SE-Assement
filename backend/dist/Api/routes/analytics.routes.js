@@ -49,5 +49,6 @@ router.get('/trends', controller.trends);
 router.get('/team-status', controller.teamStatus);
 router.get('/workload', controller.workload);
 router.get('/activity', controller.activity);
+router.get('/team-section', controller.teamSection);
 exports.default = router;
 //# sourceMappingURL=analytics.routes.js.map

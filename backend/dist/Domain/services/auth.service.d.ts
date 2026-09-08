@@ -20,6 +20,12 @@ export declare const authService: {
     login: (email: string, password: string) => Promise<AuthResult>;
     getUserWithRoles: (userId: number) => Promise<AuthUser>;
     me: (userId: number) => Promise<AuthUser>;
+    updateProfile: (userId: number, data: {
+        email: string;
+        firstName: string;
+        lastName: string;
+        password?: string;
+    }) => Promise<AuthUser>;
     updateLastLogin: (userId: number) => import(".prisma/client").Prisma.Prisma__usersClient<{
         id: number;
         email: string;

@@ -69,6 +69,16 @@ exports.authService = {
         return toPublicUser(user);
     },
     me: async (userId) => exports.authService.getUserWithRoles(userId),
+    updateProfile: async (userId, data) => {
+        const existing = await user_repository_1.userRepository.findByEmail(data.email);
+        if (existing && existing.id !== userId)
+            throw authError('Email already registered', 409);
+        const updateData = { email: data.email, firstName: data.firstName, lastName: data.lastName };
+        if (data.password)
+            updateData.password = await bcryptjs_1.default.hash(data.password, 10);
+        const updated = await user_repository_1.userRepository.update(userId, updateData);
+        return toPublicUser(updated);
+    },
     updateLastLogin: (userId) => auth_repository_1.authRepository.updateLastLogin(userId),
     verifyToken: (token) => {
         const payload = jsonwebtoken_1.default.verify(token, jwtSecret());

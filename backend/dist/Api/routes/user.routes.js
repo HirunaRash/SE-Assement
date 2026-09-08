@@ -38,11 +38,11 @@ const controller = __importStar(require("./../../Application/controllers/user.co
 const auth_1 = require("./../middleware/auth/auth");
 const validation_1 = require("./../middleware/validation");
 const router = (0, express_1.Router)();
-router.use(auth_1.authenticate, (0, auth_1.requireRoles)('admin'));
-router.get('/', controller.list);
-router.post('/', (0, validation_1.bodyRequired)('email', 'firstName', 'lastName', 'role'), controller.create);
-router.put('/:id', controller.update);
-router.delete('/:id', controller.remove);
-router.put('/:id/role', (0, validation_1.bodyRequired)('role'), controller.setRole);
+router.use(auth_1.authenticate);
+router.get('/', (0, auth_1.requireRoles)('manager', 'admin'), controller.list);
+router.post('/', (0, auth_1.requireRoles)('admin'), (0, validation_1.bodyRequired)('email', 'firstName', 'lastName', 'role'), controller.create);
+router.put('/:id', (0, auth_1.requireRoles)('admin'), controller.update);
+router.delete('/:id', (0, auth_1.requireRoles)('admin'), controller.remove);
+router.put('/:id/role', (0, auth_1.requireRoles)('admin'), (0, validation_1.bodyRequired)('role'), controller.setRole);
 exports.default = router;
 //# sourceMappingURL=user.routes.js.map

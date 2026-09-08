@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.me = exports.login = exports.register = void 0;
+exports.updateMe = exports.me = exports.login = exports.register = void 0;
 const auth_service_1 = require("../../Domain/services/auth.service");
 const isNonEmptyString = (value) => typeof value === 'string' && value.trim().length > 0;
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -67,4 +67,24 @@ const me = async (req, res) => {
     }
 };
 exports.me = me;
+const updateMe = async (req, res) => {
+    try {
+        if (!req.userId)
+            return res.status(401).json({ error: 'Not authenticated' });
+        const { email, firstName, lastName, password } = req.body || {};
+        if (!isNonEmptyString(email) || !emailPattern.test(email.trim()))
+            return res.status(400).json({ error: 'A valid email is required' });
+        if (!isNonEmptyString(firstName) || !isNonEmptyString(lastName))
+            return res.status(400).json({ error: 'firstName and lastName are required' });
+        if (password !== undefined && (!isNonEmptyString(password) || password.length < 8 || !/[A-Z]/.test(password) || !/\d/.test(password)))
+            return res.status(400).json({ error: 'Password must be at least 8 characters and include an uppercase letter and number' });
+        const user = await auth_service_1.authService.updateProfile(req.userId, { email: email.trim().toLowerCase(), firstName: firstName.trim(), lastName: lastName.trim(), password });
+        return res.status(200).json({ data: user });
+    }
+    catch (error) {
+        console.error('[auth controller] profile update failed', error);
+        return res.status(errorStatus(error, 500)).json({ error: error instanceof Error ? error.message : 'Unable to update profile' });
+    }
+};
+exports.updateMe = updateMe;
 //# sourceMappingURL=auth.controller.js.map

@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { projectService } from '../../Domain/services/project.service';
 
-export const list = async (_req: Request, res: Response) => {
-	const projects: any[] = await projectService.list();
+export const list = async (req: Request, res: Response) => {
+	const isManager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false;
+	const projects: any[] = isManager ? await projectService.list() : await projectService.listForMember(req.userId!);
 	return res.json({ data: projects.map((project) => ({
 		...project,
 		teamCount: project.project_team_members?.length || 0,

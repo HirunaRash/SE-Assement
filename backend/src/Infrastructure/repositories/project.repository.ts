@@ -4,6 +4,7 @@ const include = { project_team_members: { include: { users: { select: { id: true
 
 export const projectRepository = {
   list: () => prisma.projects.findMany({ include, orderBy: { createdAt: 'desc' } }),
+  listForMember: (userId: number) => prisma.projects.findMany({ where: { project_team_members: { some: { userId } } }, include, orderBy: { createdAt: 'desc' } }),
   findById: (id: number) => prisma.projects.findUnique({ where: { id }, include }),
   create: (data: any) => prisma.projects.create({ data, include }),
   update: (id: number, data: any) => prisma.projects.update({ where: { id }, data, include }),

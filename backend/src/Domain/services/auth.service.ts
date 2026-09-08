@@ -78,6 +78,14 @@ export const authService = {
   },
 
   me: async (userId: number): Promise<AuthUser> => authService.getUserWithRoles(userId),
+  updateProfile: async (userId: number, data: { email: string; firstName: string; lastName: string; password?: string }): Promise<AuthUser> => {
+    const existing = await userRepository.findByEmail(data.email);
+    if (existing && existing.id !== userId) throw authError('Email already registered', 409);
+    const updateData: Record<string, unknown> = { email: data.email, firstName: data.firstName, lastName: data.lastName };
+    if (data.password) updateData.password = await bcrypt.hash(data.password, 10);
+    const updated = await userRepository.update(userId, updateData);
+    return toPublicUser(updated);
+  },
   updateLastLogin: (userId: number) => authRepository.updateLastLogin(userId),
 
   verifyToken: (token: string): AuthTokenPayload => {

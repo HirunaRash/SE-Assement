@@ -1,5 +1,6 @@
 import { prisma } from '../../prisma';
 import { reportRepository } from '../../Infrastructure/repositories/report.repository';
+import { projectRepository } from '../../Infrastructure/repositories/project.repository';
 
 const owner = async (id: number, userId: number, manager = false) => { const report: any = await reportRepository.findById(id); if (!report) throw Object.assign(new Error('Report not found'), { statusCode: 404 }); if (manager && report.status === 'draft') throw Object.assign(new Error('Draft reports are not available for manager review'), { statusCode: 404 }); if (!manager && report.userId !== userId) throw Object.assign(new Error('Access denied'), { statusCode: 403 }); return report; };
 const editable = (report: any) => { if (!['draft', 'needs_correction'].includes(report.status)) throw Object.assign(new Error('Only draft or needs_correction reports can be edited'), { statusCode: 409 }); };
@@ -25,10 +26,15 @@ export const reportService = {
     return { items: await reportRepository.findAll(where, skip, take), total: await reportRepository.count(where) };
   },
   get: (id: number, userId: number, manager: boolean) => owner(id, userId, manager),
-  create: async (userId: number, data: any) => reportRepository.create({ userId, weekStartDate: dates(data.weekStartDate), weekEndDate: dates(data.weekEndDate), projectId: data.projectId ? Number(data.projectId) : null, status: 'draft' }),
+  create: async (userId: number, data: any) => {
+    const projectId = data.projectId ? Number(data.projectId) : null;
+    if (projectId && !await projectRepository.memberExists(projectId, userId)) throw Object.assign(new Error('You can only create reports for projects assigned to you'), { statusCode: 403 });
+    return reportRepository.create({ userId, weekStartDate: dates(data.weekStartDate), weekEndDate: dates(data.weekEndDate), projectId, status: 'draft' });
+  },
   update: async (id: number, userId: number, data: any) => {
     const report: any = await owner(id, userId);
     editable(report);
+    if (data.projectId !== undefined && data.projectId !== null && !await projectRepository.memberExists(Number(data.projectId), userId)) throw Object.assign(new Error('You can only use projects assigned to you'), { statusCode: 403 });
     const scalar = { weekStartDate: data.weekStartDate ? dates(data.weekStartDate) : undefined, weekEndDate: data.weekEndDate ? dates(data.weekEndDate) : undefined, projectId: data.projectId === undefined ? undefined : data.projectId ? Number(data.projectId) : null };
     await prisma.$transaction(async (tx: any) => {
       await tx.reports.update({ where: { id }, data: scalar });
