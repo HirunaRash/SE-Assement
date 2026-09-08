@@ -7,6 +7,7 @@ import projectRoutes from './Api/routes/project.routes';
 import reportRoutes from './Api/routes/report.routes';
 import userRoutes from './Api/routes/user.routes';
 import { prisma } from './prisma';
+import aiRoutes from "./Api/routes/ai.routes";
 
 const app = express();
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -21,6 +22,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use("/api/ai", aiRoutes);
 app.use('/api/users', userRoutes);
 
 app.use((_req, res) => res.status(404).json({ error: 'Route not found' }));

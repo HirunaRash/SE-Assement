@@ -48,6 +48,7 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
 		: [
 				{ href: '/report-history', label: '📋 My Reports' },
 				{ href: '/reports', label: '✍️ Create Report' },
+				{ href: '/ai-assistant', label: '🤖 AI Assistant' },
 				{ href: '/account-settings', label: '⚙️ Account Settings' },
 			];
 
