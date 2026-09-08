@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import api from '@/lib/api';
 import Link from 'next/link';
+import PageHeader from '@/components/dashboard/PageHeader';
+import EmptyState from '@/components/dashboard/EmptyState';
+import StatusBadge from '@/components/reports/StatusBadge';
 
 type Report = {
 	id: number;
@@ -106,21 +109,13 @@ export default function ReportHistoryPage() {
 		return `${formatDate(start.toISOString())} - ${formatDate(end.toISOString())}`;
 	};
 
-	const getStatusBadge = (status: string) => ({
-		text: statusLabels[status.toLowerCase().replaceAll(' ', '_')] || status,
-		className: statusStyles[status] || 'bg-gray-700 text-gray-300',
-	});
-
 	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 
 	return (
 		<main className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
-			<header className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<h1 className="text-4xl font-bold text-white sm:text-5xl">{isManager ? 'Team Reports' : 'My Reports'}</h1>
-				{!isManager && <Link href="/reports" className="w-fit rounded-lg bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-gray-100 sm:text-base">
+			<PageHeader title={isManager ? 'Team Reports' : 'My Reports'} action={!isManager && <Link href="/reports" className="w-fit rounded-lg bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-gray-100 sm:text-base">
 					+ Create New Report
-				</Link>}
-			</header>
+				</Link>} />
 
 			<section className="mb-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
 				<div>
@@ -154,11 +149,7 @@ export default function ReportHistoryPage() {
 			{loading ? (
 				<div className="py-12 text-center"><p className="text-gray-400">Loading reports...</p></div>
 			) : reports.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-neutral-700 py-12 text-center">
-					<p className="mb-4 text-gray-400">No reports found</p>
-					<p className="mb-6 text-sm text-gray-500">Start by creating your first weekly report</p>
-					<Link href="/reports" className="inline-block rounded-lg bg-white px-6 py-3 font-bold text-black transition hover:bg-gray-100">Create Report</Link>
-				</div>
+				<EmptyState title="No reports found" description="Start by creating your first weekly report" action={!isManager && <Link href="/reports" className="inline-block rounded-lg bg-white px-6 py-3 font-bold text-black transition hover:bg-gray-100">Create Report</Link>} />
 			) : (
 				<div className="overflow-x-auto rounded-lg border border-neutral-800">
 					<table className="w-full min-w-[760px] text-left text-sm text-gray-300">
@@ -167,11 +158,10 @@ export default function ReportHistoryPage() {
 						</thead>
 						<tbody className="divide-y divide-neutral-800">
 							{reports.map((report) => {
-								const badge = getStatusBadge(report.status);
 								const normalizedStatus = report.status.toLowerCase().replaceAll(' ', '_');
 								const editable = !isManager && (normalizedStatus === 'draft' || normalizedStatus === 'needs_correction');
 								const viewHref = editable ? `/reports?id=${report.id}&edit=true` : `/reports/${report.id}`;
-								return <tr key={report.id} className="transition hover:bg-neutral-900/50"><td className="px-4 py-4 font-medium text-white">{formatWeek(report.weekStartDate)}</td><td className="px-4 py-4 text-gray-400">{report.project?.name || 'No project'}</td><td className="px-4 py-4"><span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${badge.className}`}>{badge.text}</span></td><td className="px-4 py-4 text-xs text-gray-500">{formatDate(report.updatedAt)}</td><td className="space-x-2 px-4 py-4 text-right"><Link href={viewHref} className="inline-block rounded bg-blue-900/20 px-3 py-2 text-xs text-blue-400 transition hover:bg-blue-900/40">View</Link>{editable && <Link href={viewHref} className="inline-block rounded bg-yellow-900/20 px-3 py-2 text-xs text-yellow-400 transition hover:bg-yellow-900/40">Edit</Link>}</td></tr>;
+								return <tr key={report.id} className="transition hover:bg-neutral-900/50"><td className="px-4 py-4 font-medium text-white">{formatWeek(report.weekStartDate)}</td><td className="px-4 py-4 text-gray-400">{report.project?.name || 'No project'}</td><td className="px-4 py-4"><StatusBadge status={report.status} /></td><td className="px-4 py-4 text-xs text-gray-500">{formatDate(report.updatedAt)}</td><td className="space-x-2 px-4 py-4 text-right"><Link href={viewHref} className="inline-block rounded bg-blue-900/20 px-3 py-2 text-xs text-blue-400 transition hover:bg-blue-900/40">View</Link>{editable && <Link href={viewHref} className="inline-block rounded bg-yellow-900/20 px-3 py-2 text-xs text-yellow-400 transition hover:bg-yellow-900/40">Edit</Link>}</td></tr>;
 							})}
 						</tbody>
 					</table>

@@ -20,6 +20,7 @@ import {
 	XAxis,
 	YAxis,
 } from 'recharts';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 type TeamStatus = { userId: number; name: string; submitted?: number; approved?: number; needsCorrection?: number };
 type Activity = { type: string; reportId: number; teamMember: string; weekStartDate: string; timestamp: string };
@@ -120,7 +121,7 @@ export default function ManagerDashboardPage() {
 
 	return (
 		<main className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
-			<header className="mb-8"><h1 className="text-4xl font-bold text-white sm:text-5xl">Manager Dashboard</h1></header>
+			<PageHeader eyebrow="Manager workspace" title="Manager Dashboard" description="A clear view of team reporting activity, workload, and review progress." />
 			<div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center"><label htmlFor="week" className="text-sm text-gray-400">Select Week</label><input id="week" type="date" value={selectedWeek} onChange={(event) => setSelectedWeek(event.target.value)} className="rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-2 text-white transition focus:border-blue-500" /><button type="button" onClick={() => setSelectedWeek(getCurrentWeek())} className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-white transition hover:bg-gray-600">This Week</button><span className="text-sm text-gray-500">{selectedWeek && `${formatDate(getWeekRange(selectedWeek).start)} - ${formatDate(getWeekRange(selectedWeek).end)}`}</span></div>
 			{error && <div className="mb-8 rounded-lg border border-red-700/50 bg-red-900/20 p-6"><p className="text-red-400">{error}</p></div>}
 			{loading ? <div className="py-12 text-center"><p className="text-gray-400">Loading dashboard...</p></div> : <>
