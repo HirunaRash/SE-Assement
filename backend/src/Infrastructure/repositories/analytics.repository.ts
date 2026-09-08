@@ -12,7 +12,7 @@ export const analyticsRepository = {
     ]);
     return { totalReports, submittedCount, approvedCount, needsCorrectionCount, openBlockersCount };
   },
-  submissionByUser: (weekStart?: Date) => prisma.users.findMany({ select: { id: true, firstName: true, lastName: true, reports_reports_userIdTousers: { where: weekStart ? { weekStartDate: weekStart } : {}, orderBy: { submittedAt: 'desc' }, take: 1, select: { status: true, submittedAt: true } } } }),
+  submissionByUser: (weekStart?: Date) => prisma.users.findMany({ where: { user_roles_user_roles_userIdTousers: { some: { roles: { name: 'team_member' } } } }, select: { id: true, firstName: true, lastName: true, reports_reports_userIdTousers: { where: weekStart ? { weekStartDate: weekStart } : {}, select: { status: true, submittedAt: true } } } }),
   taskTrend: (startDate?: Date, endDate?: Date) => prisma.report_tasks.findMany({ where: { createdAt: { gte: startDate, lte: endDate } }, select: { status: true, createdAt: true } }),
   workload: () => prisma.projects.findMany({ select: { id: true, name: true, reports: { select: { report_tasks: { select: { status: true, timePlannedHours: true, timeSpentHours: true } } } } } }),
   timeByType: () => prisma.report_time_by_task_type.groupBy({ by: ['taskType'], _sum: { hours: true } }),

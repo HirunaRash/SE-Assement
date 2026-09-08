@@ -27,10 +27,16 @@ exports.reportService = {
         const where = { status: requestedStatus || { not: 'draft' } };
         if (filters.projectId)
             where.projectId = Number(filters.projectId);
+        if (filters.userId)
+            where.userId = Number(filters.userId);
         if (filters.weekStart)
             where.weekStartDate = { ...(where.weekStartDate || {}), gte: dates(filters.weekStart) };
         if (filters.weekEnd)
             where.weekEndDate = { ...(where.weekEndDate || {}), lte: dates(filters.weekEnd) };
+        if (filters.startDate)
+            where.weekStartDate = { ...(where.weekStartDate || {}), gte: dates(filters.startDate) };
+        if (filters.endDate)
+            where.weekEndDate = { ...(where.weekEndDate || {}), lte: dates(filters.endDate) };
         return { items: await report_repository_1.reportRepository.findAll(where, skip, take), total: await report_repository_1.reportRepository.count(where) };
     },
     get: (id, userId, manager) => owner(id, userId, manager),
@@ -73,8 +79,8 @@ exports.reportService = {
     addTime: async (id, userId, data) => { const report = await owner(id, userId); editable(report); return report_repository_1.reportRepository.time({ reportId: id, taskType: data.taskType, hours: data.hours }); },
     review: async (id, reviewerId, status, comment) => { const report = await owner(id, reviewerId, true); if (report.status !== 'submitted')
         throw Object.assign(new Error('Only submitted reports can be reviewed'), { statusCode: 409 }); await report_repository_1.reportRepository.review({ reportId: id, reviewedBy: reviewerId, previousStatus: report.status, newStatus: status, comment: comment || null }); await report_repository_1.reportRepository.update(id, { status, lastReviewComment: comment || null, lastReviewedBy: reviewerId, lastReviewedAt: new Date(), approvedAt: status === 'approved' ? new Date() : null }); return { status, ...(comment ? { comment } : {}) }; },
-    versions: (id) => report_repository_1.reportRepository.versions(id),
-    version: (id, version) => report_repository_1.reportRepository.versionByNumber(id, version),
+    versions: async (id, userId, manager) => { await owner(id, userId, manager); return report_repository_1.reportRepository.versions(id); },
+    version: async (id, version, userId, manager) => { await owner(id, userId, manager); return report_repository_1.reportRepository.versionByNumber(id, version); },
     history: (id) => report_repository_1.reportRepository.reviewHistory(id),
 };
 //# sourceMappingURL=report.service.js.map

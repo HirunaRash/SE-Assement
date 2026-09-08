@@ -82,12 +82,8 @@ export default function ReportHistoryPage() {
 				setReports(nextReports);
 
 				if (isManager) {
-					const members: TeamMember[] = [];
-					for (const report of nextReports) {
-						if (report.user && !members.some((member) => member.id === report.user?.id)) {
-							members.push({ id: report.user.id, fullName: report.user.fullName });
-						}
-					}
+					const memberResponse: any = await api.get('/analytics/submission-by-user');
+					const members: TeamMember[] = (Array.isArray(memberResponse) ? memberResponse : []).map((member: any) => ({ id: member.userId, fullName: member.name || member.userName }));
 					setTeamMembers(members);
 				}
 			} catch (requestError: any) {
@@ -121,9 +117,9 @@ export default function ReportHistoryPage() {
 		<main className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
 			<header className="mb-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<h1 className="text-4xl font-bold text-white sm:text-5xl">{isManager ? 'Team Reports' : 'My Reports'}</h1>
-				<Link href="/reports" className="w-fit rounded-lg bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-gray-100 sm:text-base">
+				{!isManager && <Link href="/reports" className="w-fit rounded-lg bg-white px-6 py-3 text-sm font-bold text-black transition hover:bg-gray-100 sm:text-base">
 					+ Create New Report
-				</Link>
+				</Link>}
 			</header>
 
 			<section className="mb-8 flex flex-col gap-4 sm:flex-row sm:flex-wrap">
@@ -131,7 +127,7 @@ export default function ReportHistoryPage() {
 					<label htmlFor="status" className="mb-2 block text-sm text-gray-400">Filter by Status</label>
 					<select id="status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="w-full cursor-pointer rounded-lg border border-neutral-700 bg-neutral-900 px-4 py-2 text-white transition focus:border-blue-500 sm:w-48">
 						<option value="all">All Status</option>
-						{Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+						{Object.entries(statusLabels).filter(([value]) => !isManager || value !== 'draft').map(([value, label]) => <option key={value} value={value}>{label}</option>)}
 					</select>
 				</div>
 				{isManager && (

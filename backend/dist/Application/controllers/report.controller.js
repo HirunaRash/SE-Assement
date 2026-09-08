@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.history = exports.version = exports.versions = exports.requestChanges = exports.approve = exports.time = exports.deleteChild = exports.updateChild = exports.child = exports.deleteTask = exports.updateTask = exports.task = exports.submit = exports.update = exports.create = exports.getAccessible = exports.getManager = exports.getMine = exports.getTeamReports = exports.all = exports.myList = void 0;
+exports.history = exports.versions = exports.version = exports.requestChanges = exports.approve = exports.time = exports.deleteChild = exports.updateChild = exports.child = exports.deleteTask = exports.updateTask = exports.task = exports.submit = exports.update = exports.create = exports.getAccessible = exports.getManager = exports.getMine = exports.getTeamReports = exports.all = exports.myList = void 0;
 const report_service_1 = require("../../Domain/services/report.service");
 const params_1 = require("../../Api/utils/params");
 const id = (req) => Number(req.params.id);
@@ -44,10 +44,10 @@ const approve = async (req, res) => res.json({ data: await report_service_1.repo
 exports.approve = approve;
 const requestChanges = async (req, res) => res.json({ data: await report_service_1.reportService.review(id(req), req.userId, 'needs_correction', req.body.comment) });
 exports.requestChanges = requestChanges;
-const versions = async (req, res) => res.json({ data: await report_service_1.reportService.versions(id(req)) });
-exports.versions = versions;
-const version = async (req, res) => res.json({ data: await report_service_1.reportService.version(id(req), Number(req.params.versionNumber)) });
+const version = async (req, res) => { const manager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false; return res.json({ data: await report_service_1.reportService.version(id(req), Number(req.params.versionNumber), req.userId, manager) }); };
 exports.version = version;
+const versions = async (req, res) => { const manager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false; return res.json({ data: await report_service_1.reportService.versions(id(req), req.userId, manager) }); };
+exports.versions = versions;
 const history = async (req, res) => res.json({ data: await report_service_1.reportService.history(id(req)) });
 exports.history = history;
 //# sourceMappingURL=report.controller.js.map

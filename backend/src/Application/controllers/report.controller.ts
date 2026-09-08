@@ -26,6 +26,6 @@ export const deleteChild = async (req: Request, res: Response) => { await report
 export const time = async (req: Request, res: Response) => res.status(201).json({ data: await reportService.addTime(id(req), req.userId!, req.body) });
 export const approve = async (req: Request, res: Response) => res.json({ data: await reportService.review(id(req), req.userId!, 'approved') });
 export const requestChanges = async (req: Request, res: Response) => res.json({ data: await reportService.review(id(req), req.userId!, 'needs_correction', req.body.comment) });
-export const versions = async (req: Request, res: Response) => res.json({ data: await reportService.versions(id(req)) });
-export const version = async (req: Request, res: Response) => res.json({ data: await reportService.version(id(req), Number(req.params.versionNumber)) });
+export const version = async (req: Request, res: Response) => { const manager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false; return res.json({ data: await reportService.version(id(req), Number(req.params.versionNumber), req.userId!, manager) }); };
+export const versions = async (req: Request, res: Response) => { const manager = req.userRoles?.some((role) => role === 'manager' || role === 'admin') ?? false; return res.json({ data: await reportService.versions(id(req), req.userId!, manager) }); };
 export const history = async (req: Request, res: Response) => res.json({ data: await reportService.history(id(req)) });

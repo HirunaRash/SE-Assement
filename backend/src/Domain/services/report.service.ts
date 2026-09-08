@@ -17,8 +17,11 @@ export const reportService = {
     if (requestedStatus === 'draft') return { items: [], total: 0 };
     const where: any = { status: requestedStatus || { not: 'draft' } };
     if (filters.projectId) where.projectId = Number(filters.projectId);
+    if (filters.userId) where.userId = Number(filters.userId);
     if (filters.weekStart) where.weekStartDate = { ...(where.weekStartDate || {}), gte: dates(filters.weekStart) };
     if (filters.weekEnd) where.weekEndDate = { ...(where.weekEndDate || {}), lte: dates(filters.weekEnd) };
+    if (filters.startDate) where.weekStartDate = { ...(where.weekStartDate || {}), gte: dates(filters.startDate) };
+    if (filters.endDate) where.weekEndDate = { ...(where.weekEndDate || {}), lte: dates(filters.endDate) };
     return { items: await reportRepository.findAll(where, skip, take), total: await reportRepository.count(where) };
   },
   get: (id: number, userId: number, manager: boolean) => owner(id, userId, manager),
@@ -53,7 +56,7 @@ export const reportService = {
   deleteChild: async (kind: string, id: number, userId: number, childId: number) => { await owner(id, userId); const map: any = { blockers: 'deleteBlocker', achievements: 'deleteAchievement', 'next-week-tasks': 'deleteNextTask' }; await (reportRepository as any)[map[kind]](childId); },
   addTime: async (id: number, userId: number, data: any) => { const report: any = await owner(id, userId); editable(report); return reportRepository.time({ reportId: id, taskType: data.taskType, hours: data.hours }); },
   review: async (id: number, reviewerId: number, status: 'approved' | 'needs_correction', comment?: string) => { const report: any = await owner(id, reviewerId, true); if (report.status !== 'submitted') throw Object.assign(new Error('Only submitted reports can be reviewed'), { statusCode: 409 }); await reportRepository.review({ reportId: id, reviewedBy: reviewerId, previousStatus: report.status, newStatus: status, comment: comment || null }); await reportRepository.update(id, { status, lastReviewComment: comment || null, lastReviewedBy: reviewerId, lastReviewedAt: new Date(), approvedAt: status === 'approved' ? new Date() : null }); return { status, ...(comment ? { comment } : {}) }; },
-  versions: (id: number) => reportRepository.versions(id),
-  version: (id: number, version: number) => reportRepository.versionByNumber(id, version),
+  versions: async (id: number, userId: number, manager: boolean) => { await owner(id, userId, manager); return reportRepository.versions(id); },
+  version: async (id: number, version: number, userId: number, manager: boolean) => { await owner(id, userId, manager); return reportRepository.versionByNumber(id, version); },
   history: (id: number) => reportRepository.reviewHistory(id),
 };

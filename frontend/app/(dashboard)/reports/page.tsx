@@ -51,6 +51,7 @@ export default function CreateReportPage() {
 	const [submitLoading, setSubmitLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState('');
+	const [reviewHistory, setReviewHistory] = useState<Array<{ comment: string; action?: string; createdAt?: string; reviewer?: string }>>([]);
 
 	useEffect(() => {
 		if (!token) return;
@@ -61,6 +62,13 @@ export default function CreateReportPage() {
 				if (!reportId) return;
 				const response = await api.get(`/reports/${reportId}`);
 				const report = response;
+				const reviews = report.report_review_history || report.reviews || [];
+				setReviewHistory(reviews.filter((review: any) => review.comment).sort((first: any, second: any) => new Date(second.createdAt || 0).getTime() - new Date(first.createdAt || 0).getTime()).map((review: any) => ({
+					comment: review.comment,
+					action: review.newStatus || review.action,
+					createdAt: review.createdAt,
+					reviewer: review.users?.firstName ? `${review.users.firstName} ${review.users.lastName}` : review.manager?.fullName || review.manager?.email,
+				})));
 				setWeekStart(report.weekStartDate?.slice(0, 10) || '');
 				if (report.weekStartDate) {
 					const end = new Date(report.weekStartDate);
@@ -149,6 +157,7 @@ export default function CreateReportPage() {
 			<header className="mb-8"><Link href="/report-history" className="text-sm text-gray-400 transition hover:text-gray-300">← Back to reports</Link><h1 className="mt-6 text-4xl font-bold text-white sm:text-5xl">{reportId ? 'Edit Report' : 'Create Weekly Report'}</h1></header>
 			{error && <div className="mb-8 rounded-lg border border-red-700/50 bg-red-900/20 p-6"><p className="text-red-400">{error}</p></div>}
 			{success && <div className="mb-8 rounded-lg border border-green-700/50 bg-green-900/20 p-6"><p className="text-green-400">{success}</p></div>}
+			{reportId && reviewHistory.length > 0 && <section className="mb-8 rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h2 className="mb-5 text-xl font-bold text-white">Previous Review Comments</h2><div className="space-y-3">{reviewHistory.map((review, index) => <article key={`${review.createdAt}-${index}`} className={`rounded-lg border p-4 ${index === 0 ? 'border-yellow-700/60 bg-yellow-950/30' : 'border-neutral-700 bg-neutral-900'}`}><div className="flex justify-between gap-4"><span className="font-semibold text-white">{review.action === 'needs_correction' ? 'Changes Requested' : review.action || 'Review Comment'}</span><span className="text-xs text-gray-500">{review.createdAt ? new Date(review.createdAt).toLocaleString() : ''}</span></div><p className="mt-2 whitespace-pre-wrap text-gray-300">{review.comment}</p>{review.reviewer && <p className="mt-2 text-xs text-gray-500">{review.reviewer}</p>}</article>)}</div></section>}
 
 			<div className="space-y-8">
 				<section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h2 className="mb-8 text-2xl font-bold text-white">Report Period &amp; Project</h2><div className="grid grid-cols-1 gap-6 md:grid-cols-2"><label className="text-sm text-gray-400">Week Start Date<input type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} className={`mt-2 ${inputClass}`} required /></label><label className="text-sm text-gray-400">Week End Date<input type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} className={`mt-2 ${inputClass}`} required /></label></div><label className="mt-6 block text-sm text-gray-400">Project / Category<select value={projectId} onChange={(e) => setProjectId(e.target.value)} className={`mt-2 ${inputClass}`} required><option value="">Select a project...</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label></section>

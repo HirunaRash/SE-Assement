@@ -14,9 +14,9 @@ export declare const analyticsService: {
         userId: any;
         userName: string;
         name: string;
-        reportStatus: any;
-        status: any;
-        submitted: boolean;
+        submitted: any;
+        approved: any;
+        needsCorrection: any;
         lastSubmittedAt: any;
     }[]>;
     tasksTrend: (start?: Date, end?: Date) => Promise<{

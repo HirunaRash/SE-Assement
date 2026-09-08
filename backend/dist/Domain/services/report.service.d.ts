@@ -369,7 +369,7 @@ export declare const reportService: {
         status: "approved" | "needs_correction";
         comment?: string | undefined;
     }>;
-    versions: (id: number) => import(".prisma/client").Prisma.PrismaPromise<({
+    versions: (id: number, userId: number, manager: boolean) => Promise<({
         report_version_tasks: {
             id: number;
             versionId: number;
@@ -394,7 +394,7 @@ export declare const reportService: {
         status: import(".prisma/client").$Enums.report_versions_status;
         createdAt: Date | null;
     })[]>;
-    version: (id: number, version: number) => import(".prisma/client").Prisma.Prisma__report_versionsClient<({
+    version: (id: number, version: number, userId: number, manager: boolean) => Promise<({
         report_version_tasks: {
             id: number;
             versionId: number;
@@ -418,7 +418,7 @@ export declare const reportService: {
         reviewedAt: Date | null;
         status: import(".prisma/client").$Enums.report_versions_status;
         createdAt: Date | null;
-    }) | null, null, import("@prisma/client/runtime/library").DefaultArgs>;
+    }) | null>;
     history: (id: number) => import(".prisma/client").Prisma.PrismaPromise<({
         users: {
             firstName: string;

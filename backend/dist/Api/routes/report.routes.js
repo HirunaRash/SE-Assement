@@ -56,8 +56,8 @@ for (const resource of ['blockers', 'achievements', 'next-week-tasks']) {
 }
 router.post('/:id/time-by-type', (0, auth_1.requireRoles)('team_member'), controller.time);
 router.get('/', (0, auth_1.requireRoles)('manager', 'admin'), controller.all);
-router.get('/:id/versions/:versionNumber', (0, auth_1.requireRoles)('manager', 'admin'), controller.version);
-router.get('/:id/versions', (0, auth_1.requireRoles)('manager', 'admin'), controller.versions);
+router.get('/:id/versions/:versionNumber', (0, auth_1.requireRoles)('team_member', 'manager', 'admin'), controller.version);
+router.get('/:id/versions', (0, auth_1.requireRoles)('team_member', 'manager', 'admin'), controller.versions);
 router.get('/:id/review-history', (0, auth_1.requireRoles)('manager', 'admin'), controller.history);
 router.put('/:id/approve', (0, auth_1.requireRoles)('manager', 'admin'), controller.approve);
 router.put('/:id/request-changes', (0, auth_1.requireRoles)('manager', 'admin'), (0, validation_1.bodyRequired)('comment'), controller.requestChanges);

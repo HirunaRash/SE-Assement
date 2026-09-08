@@ -25,6 +25,14 @@ type Review = {
 	manager?: { fullName?: string; email?: string };
 };
 
+type ReportVersion = {
+	id: number;
+	versionNumber: number;
+	submittedAt: string;
+	status: string;
+	report_version_tasks?: Task[];
+};
+
 type Report = {
 	id: number;
 	userId: number;
@@ -39,6 +47,7 @@ type Report = {
 	notes?: string;
 	createdAt: string;
 	updatedAt: string;
+	lastReviewComment?: string | null;
 	reviews?: Review[];
 };
 
@@ -62,6 +71,8 @@ export default function ReportDetailPage() {
 	const [reviewComment, setReviewComment] = useState('');
 	const [reviewLoading, setReviewLoading] = useState(false);
 	const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+	const [versions, setVersions] = useState<ReportVersion[]>([]);
+	const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
 
 	useEffect(() => {
 		if (!token || !reportId) return;
@@ -69,6 +80,7 @@ export default function ReportDetailPage() {
 		const fetchReport = async () => {
 			try {
 				const response: any = await api.get(`/reports/${reportId}`);
+				const rawReviews: any[] = response.reviews || response.report_review_history || [];
 				const nextReport: Report = {
 					...response,
 					project: response.project || response.projects || null,
@@ -81,7 +93,14 @@ export default function ReportDetailPage() {
 					achievements: response.achievements || response.report_achievements?.map((item: any) => item.description).join('\n') || '',
 					plannedNextWeek: response.plannedNextWeek || response.report_next_week_tasks?.map((item: any) => item.taskName).join('\n') || '',
 					notes: response.notes || response.report_optional_fields?.[0]?.notes || '',
-					reviews: response.reviews || response.report_review_history || [],
+					reviews: rawReviews.map((review) => ({
+						...review,
+						action: review.action || review.newStatus,
+						manager: review.manager || review.users ? {
+							...(review.manager || review.users),
+							fullName: (review.manager || review.users)?.fullName || `${(review.manager || review.users)?.firstName || ''} ${(review.manager || review.users)?.lastName || ''}`.trim(),
+						} : undefined,
+					})).sort((first, second) => new Date(second.createdAt || 0).getTime() - new Date(first.createdAt || 0).getTime()),
 				};
 				const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 				if (!isManager && nextReport.userId !== user?.id) {
@@ -89,6 +108,8 @@ export default function ReportDetailPage() {
 					return;
 				}
 				setReport(nextReport);
+				const versionResponse: any = await api.get(`/reports/${reportId}/versions`);
+				setVersions(Array.isArray(versionResponse) ? versionResponse : versionResponse.items || versionResponse.versions || []);
 			} catch (requestError: any) {
 				setError(requestError.response?.data?.error || 'Unable to load report');
 			} finally {
@@ -105,7 +126,7 @@ export default function ReportDetailPage() {
 
 	const getStatusBadge = (status: string) => statusMap[status.toLowerCase()] || { text: status, className: 'bg-gray-700 text-gray-300' };
 	const getLines = (value?: string) => (value || '').split('\n').filter(Boolean);
-	const latestReview = report?.reviews?.[report.reviews.length - 1];
+	const latestReview = report?.reviews?.[0];
 	const isManager = user?.roles?.some((role) => role === 'manager' || role === 'admin') ?? false;
 	const isOwner = report?.userId === user?.id;
 	const normalizedStatus = report?.status.toLowerCase().replaceAll(' ', '_');
@@ -150,7 +171,9 @@ export default function ReportDetailPage() {
 						<div className="mt-8 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2"><div><p className="text-gray-500">Week Start</p><p className="mt-1 text-white">{formatDate(report.weekStartDate)}</p></div><div><p className="text-gray-500">Project</p><p className="mt-1 text-white">{report.project?.name || 'No project'}</p></div><div><p className="text-gray-500">Submitted</p><p className="mt-1 text-white">{formatDate(report.createdAt)}</p></div><div><p className="text-gray-500">Last Updated</p><p className="mt-1 text-white">{formatDate(report.updatedAt)}</p></div></div>
 					</section>
 
-					{normalizedStatus === 'needs_correction' && latestReview?.comment && <section className="rounded-2xl border border-yellow-700/50 bg-yellow-900/20 p-6 sm:p-8"><h3 className="mb-4 text-xl font-bold text-yellow-300">📝 Feedback from Manager</h3><p className="mb-4 leading-relaxed text-yellow-200">{latestReview.comment}</p><p className="text-sm text-yellow-600">Reviewed by {latestReview.manager?.fullName || latestReview.manager?.email || 'Manager'} on {formatDate(latestReview.createdAt)}</p><p className="mt-2 text-xs text-yellow-600">You can now edit this report and resubmit it for review.</p></section>}
+					{report.reviews?.some((review) => review.comment) && <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h3 className="mb-6 text-2xl font-bold text-white">Previous Review Comments</h3><div className="space-y-4">{report.reviews.filter((review) => review.comment).map((review, index) => <article key={`${review.createdAt}-${index}`} className={`rounded-lg border p-4 ${index === 0 ? 'border-yellow-700/60 bg-yellow-950/30' : 'border-neutral-700 bg-neutral-900'}`}><div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><p className="font-semibold text-white">{review.action === 'needs_correction' || review.action === 'Needs Correction' ? 'Changes Requested' : review.action || 'Review Comment'}</p><time className="text-xs text-gray-500">{formatDate(review.createdAt)}</time></div><p className="mt-2 whitespace-pre-wrap text-gray-300">{review.comment}</p><p className="mt-2 text-xs text-gray-500">{review.manager?.fullName || review.manager?.email || 'Manager'}</p></article>)}</div></section>}
+
+					{versions.length > 0 && <section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h3 className="mb-6 text-2xl font-bold text-white">Report Version History</h3><div className="space-y-3">{versions.map((version) => <article key={version.id} className="rounded-lg border border-neutral-700 bg-neutral-900 p-4"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-white">Version {version.versionNumber}</p><p className="text-sm text-gray-400">Submitted {formatDate(version.submittedAt)} · {version.status}</p></div><button type="button" onClick={() => setSelectedVersion(selectedVersion === version.versionNumber ? null : version.versionNumber)} className="rounded bg-blue-900/30 px-4 py-2 text-sm text-blue-300">{selectedVersion === version.versionNumber ? 'Hide Version' : 'View Version'}</button></div>{selectedVersion === version.versionNumber && <div className="mt-4 space-y-2 border-t border-neutral-800 pt-4">{version.report_version_tasks?.length ? version.report_version_tasks.map((task) => <div key={task.id} className="rounded border border-neutral-800 p-3 text-sm text-gray-300"><span className="font-semibold text-white">{task.taskName}</span> · {task.status} · {task.actualPercentage}% complete</div>) : <p className="text-sm italic text-gray-500">No task snapshot was saved for this version.</p>}</div>}</article>)}</div></section>}
 
 					<section className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 sm:p-8"><h3 className="mb-8 text-2xl font-bold text-white">Tasks Completed</h3>{report.tasks?.length ? <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-xs text-gray-300 sm:text-sm"><thead className="bg-neutral-800"><tr>{['Task Name', 'Priority', 'Planned %', 'Actual %', 'Status', 'Time Planned', 'Time Spent', 'Deliverable'].map((heading) => <th key={heading} className="px-3 py-3 font-semibold">{heading}</th>)}</tr></thead><tbody>{report.tasks.map((task) => <tr key={task.id} className="border-b border-neutral-800"><td className="px-3 py-3 text-white">{task.taskName}</td><td className="px-3 py-3">{task.priority}</td><td className="px-3 py-3">{task.plannedPercentage}%</td><td className="px-3 py-3">{task.actualPercentage}%</td><td className="px-3 py-3">{task.status}</td><td className="px-3 py-3">{task.timePlannedHours}h</td><td className="px-3 py-3">{task.timeSpentHours}h</td><td className="max-w-xs truncate px-3 py-3">{task.deliverable || '-'}</td></tr>)}</tbody></table></div> : <p className="text-sm italic text-gray-400">No tasks recorded.</p>}</section>
 
