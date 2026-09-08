@@ -4,7 +4,10 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
 export async function analyzeReportDescription(userMessage: string) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({
+      model: "gemini-3.6-flash",
+      generationConfig: { responseMimeType: "application/json" },
+    });
 
     const prompt = `You are a weekly report analysis assistant. The user describes what they did this week in natural language. 
 
