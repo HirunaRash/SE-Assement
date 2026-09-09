@@ -237,9 +237,7 @@ export default function AiAssistantPage() {
             <div ref={chatEndRef} />
           </div>
         </section>
-
-     //inline error barrior
-
+        
         {error && (
           <div
             role="alert"
