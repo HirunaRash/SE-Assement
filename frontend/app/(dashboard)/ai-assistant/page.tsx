@@ -1,26 +1,8 @@
 'use client';
 
-/**
- * AI Report Writing Assistant
- * -------------------------------------------------------------------------
- * A chat interface where a team member describes their week in plain English
- * and the backend AI (POST /api/ai/analyze) extracts structured data:
- *   - tasks completed
- *   - achievements / highlights
- *   - blockers / challenges
- *   - tasks planned for next week
- *
- * The extracted data is rendered both as a conversational reply and as a
- * colour-coded summary section that can be copied into a weekly report.
- */
-
 import { useEffect, useRef, useState } from 'react';
 import api from '@/lib/api';
 import PageHeader from '@/components/dashboard/PageHeader';
-
-/* ------------------------------------------------------------------ */
-/*  Types                                                              */
-/* ------------------------------------------------------------------ */
 
 type ChatRole = 'user' | 'assistant';
 
@@ -35,15 +17,8 @@ interface ExtractedData {
   blockers: string[];
   nextWeekTasks: string[];
 }
-
-/** Shape returned by `api.post` (it already unwraps the backend `{ data }`). */
 type AnalyzeResponse = Partial<ExtractedData> | null | undefined;
 
-/* ------------------------------------------------------------------ */
-/*  Helpers                                                            */
-/* ------------------------------------------------------------------ */
-
-/** Coerce an unknown value into a clean `string[]` (trims + drops empties). */
 function toStringList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -52,7 +27,6 @@ function toStringList(value: unknown): string[] {
     .filter(Boolean);
 }
 
-/** Normalise a raw API response into a fully-populated ExtractedData object. */
 function normalizeExtractedData(raw: AnalyzeResponse): ExtractedData {
   return {
     tasks: toStringList(raw?.tasks),
@@ -62,7 +36,6 @@ function normalizeExtractedData(raw: AnalyzeResponse): ExtractedData {
   };
 }
 
-/** True when the AI returned nothing usable across every category. */
 function isEmptyExtractedData(data: ExtractedData): boolean {
   return (
     data.tasks.length === 0 &&
@@ -72,7 +45,7 @@ function isEmptyExtractedData(data: ExtractedData): boolean {
   );
 }
 
-/** Build a friendly assistant reply summarising what was extracted. */
+//what was extrated
 function buildAssistantSummary(data: ExtractedData): string {
   if (isEmptyExtractedData(data)) {
     return "I couldn't pull any clear tasks, achievements, blockers or plans from that. Try adding more detail about what you worked on this week.";
@@ -94,7 +67,7 @@ function buildAssistantSummary(data: ExtractedData): string {
   return lines.join('\n');
 }
 
-/** Turn an unknown thrown value into a readable message. */
+
 function toErrorMessage(err: unknown): string {
   if (err && typeof err === 'object' && 'message' in err) {
     const message = (err as { message?: unknown }).message;
@@ -104,11 +77,6 @@ function toErrorMessage(err: unknown): string {
   return 'Something went wrong while contacting the AI assistant. Please try again.';
 }
 
-/* ------------------------------------------------------------------ */
-/*  Presentational pieces                                              */
-/* ------------------------------------------------------------------ */
-
-/** A single colour-coded category inside the extracted-data panel. */
 function ExtractedCategory({
   title,
   items,
@@ -116,7 +84,6 @@ function ExtractedCategory({
 }: {
   title: string;
   items: string[];
-  /** Tailwind text colour class for the header, e.g. `text-blue-300`. */
   accent: string;
 }) {
   return (
@@ -137,7 +104,7 @@ function ExtractedCategory({
   );
 }
 
-/** Animated "AI is thinking" indicator. */
+//thinking animation 
 function LoadingIndicator() {
   return (
     <div className="flex items-center gap-3 text-sm text-green-300">
@@ -150,10 +117,6 @@ function LoadingIndicator() {
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  Page                                                               */
-/* ------------------------------------------------------------------ */
 
 export default function AiAssistantPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -174,11 +137,6 @@ export default function AiAssistantPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, loading]);
 
-  /**
-   * Core action: send the current input to the AI, append both the user
-   * message and the AI reply to the conversation, and surface the
-   * structured result. Guards against empty input and concurrent sends.
-   */
   const sendMessage = async () => {
     const trimmed = input.trim();
     if (!trimmed || loading) return; // 10) prevent empty messages / double-send
@@ -216,7 +174,7 @@ export default function AiAssistantPage() {
     }
   };
 
-  /** Enter sends, Shift+Enter inserts a newline. Ignored while loading. */
+  //Shift+Enter inserts a newline. Ignored while loading.
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -236,9 +194,6 @@ export default function AiAssistantPage() {
           description="Describe your week in plain language and let the assistant extract your tasks, achievements, blockers, and plans for next week."
         />
 
-        {/* ---------------------------------------------------------- */}
-        {/*  Chat area                                                  */}
-        {/* ---------------------------------------------------------- */}
         <section
           aria-label="Conversation"
           className="h-96 overflow-y-auto rounded-lg border border-gray-700 bg-gray-800 p-4"
@@ -283,9 +238,8 @@ export default function AiAssistantPage() {
           </div>
         </section>
 
-        {/* ---------------------------------------------------------- */}
-        {/*  Inline error banner                                        */}
-        {/* ---------------------------------------------------------- */}
+     //inline error barrior
+
         {error && (
           <div
             role="alert"
@@ -295,9 +249,6 @@ export default function AiAssistantPage() {
           </div>
         )}
 
-        {/* ---------------------------------------------------------- */}
-        {/*  Extracted data panel (only when we have something)         */}
-        {/* ---------------------------------------------------------- */}
         {hasExtractedData && extractedData && (
           <section
             aria-label="Extracted report data"
@@ -329,9 +280,6 @@ export default function AiAssistantPage() {
           </section>
         )}
 
-        {/* ---------------------------------------------------------- */}
-        {/*  Input section                                              */}
-        {/* ---------------------------------------------------------- */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-stretch">
           <textarea
             value={input}

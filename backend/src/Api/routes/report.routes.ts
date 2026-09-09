@@ -15,6 +15,7 @@ router.put('/:id/submit', requireRoles('team_member'), controller.submit);
 router.post('/:id/tasks', requireRoles('team_member'), bodyRequired('taskName'), controller.task);
 router.put('/:id/tasks/:taskId', requireRoles('team_member'), controller.updateTask);
 router.delete('/:id/tasks/:taskId', requireRoles('team_member'), controller.deleteTask);
+
 for (const resource of ['blockers', 'achievements', 'next-week-tasks']) {
   router.post(`/:id/${resource}`, requireRoles('team_member'), controller.child);
   router.put(`/:id/${resource}/:taskId`, requireRoles('team_member'), controller.updateChild);
@@ -28,4 +29,5 @@ router.get('/:id/review-history', requireRoles('manager', 'admin'), controller.h
 router.put('/:id/approve', requireRoles('manager', 'admin'), controller.approve);
 router.put('/:id/request-changes', requireRoles('manager', 'admin'), bodyRequired('comment'), controller.requestChanges);
 router.get('/:id', requireRoles('team_member', 'manager', 'admin'), controller.getAccessible);
+
 export default router;
